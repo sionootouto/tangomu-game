@@ -180,3 +180,21 @@ button:active {
     transition: none !important;
   }
 }
+
+
+/* eete：紫色のシークレット */
+.letter.rare-purple {
+  background: linear-gradient(135deg, #e9d5ff, #9333ea);
+  color: #fff;
+  border-color: #6b21a8;
+  box-shadow: 0 0 10px #a855f7;
+}
+
+/* tangomu：金色のシークレット */
+.letter.rare-gold {
+  background: linear-gradient(135deg, #fff1a8, #d4af37, #8a6d1d);
+  color: #3b2800;
+  border-color: #8a6d1d;
+  box-shadow: 0 0 12px #ffd700;
+}
+
