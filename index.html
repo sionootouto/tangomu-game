@@ -46,6 +46,43 @@
     .sparkle { display: none; font-size: 1.7rem; margin-top: 8px; }
     .sparkle.show { display: block; animation: pop .45s ease-out; }
     @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+/* クリア時の紙吹雪 */
+#confetti {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 16px;
+  animation: confetti-fall 3s ease-in forwards;
+}
+
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(900deg);
+    opacity: 0;
+  }
+}
+
+#status.win {
+  white-space: pre-line;
+  color: #16804a;
+  font-size: 1.5rem;
+  line-height: 1.8;
+  animation: pop .5s ease-out;
+}
+
     @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
   </style>
 </head>
@@ -61,6 +98,7 @@
     </div>
     <div id="status" role="status" aria-live="polite">「シャッフル！」を押して挑戦しよう。</div>
     <div id="sparkle" class="sparkle" aria-hidden="true">🎉 ✨ 🎉</div>
+    <div id="confetti" aria-hidden="true"></div>
     <div class="count">シャッフル回数：<span id="count">0</span></div>
   </main>
   <script>
@@ -92,6 +130,36 @@
         lettersEl.appendChild(tile);
       });
     }
+    
+function launchConfetti() {
+  const container = document.getElementById("confetti");
+  const colors = [
+    "#ff4d6d",
+    "#ffd166",
+    "#06d6a0",
+    "#4dabf7",
+    "#9b5de5",
+    "#ff85c1"
+  ];
+
+  container.replaceChildren();
+
+  for (let i = 0; i < 100; i++) {
+    const piece = document.createElement("span");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "%";
+    piece.style.backgroundColor =
+      colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 1.5 + "s";
+    piece.style.animationDuration =
+      (2.5 + Math.random() * 2) + "s";
+    piece.style.transform =
+      `rotate(${Math.random() * 360}deg)`;
+
+    container.appendChild(piece);
+  }
+}
+
     function shuffle() {
       if (cleared) return;
       count++;
@@ -100,11 +168,14 @@
       // If the random result happens to be the answer, that's a win!
       cleared = letters.join("") === target;
       render();
-      if (cleared) {
-        statusEl.textContent = `クリア！！ ${count}回目で tangomu 完成！`;
-        statusEl.classList.add("win");
-        sparkleEl.classList.add("show");
-      } else {
+      
+if (cleared) {
+  statusEl.textContent = "クリア！\n君が真のたんごむだ！";
+  statusEl.classList.add("win");
+  sparkleEl.classList.add("show");
+  launchConfetti();
+} else {
+
         statusEl.textContent = "まだまだ！ もう一回シャッフル！";
       }
     }
@@ -118,6 +189,7 @@
       statusEl.textContent = "「シャッフル！」を押して挑戦しよう。";
       statusEl.classList.remove("win");
       sparkleEl.classList.remove("show");
+      document.getElementById("confetti").replaceChildren();
     }
     document.getElementById("shuffle").addEventListener("click", shuffle);
     document.getElementById("reset").addEventListener("click", reset);
