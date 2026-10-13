@@ -104,6 +104,7 @@
   </main>
   <script>
     const target = "tangomu";
+    const DEBUG_MODE = true;
     let letters = [];
     let count = 0;
     let cleared = false;
@@ -208,6 +209,11 @@ if (cleared) {
     }
     document.getElementById("shuffle").addEventListener("click", shuffle);
     document.getElementById("debug").addEventListener("click", debugClear);
+    
+const debugButton = document.getElementById("debug");
+
+debugButton.hidden = !DEBUG_MODE;
+
     document.getElementById("reset").addEventListener("click", reset);
     reset();
   </script>
