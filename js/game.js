@@ -60,13 +60,18 @@ debugTangomuButton.hidden = !DEBUG_MODE;
 // ========================================
 
 function updateButtons() {
+  // シャッフルボタンはクリア前だけ表示
   shuffleButton.hidden = cleared;
-  resetButton.hidden = !cleared;
 
+  // 「最初から」ボタンは常に非表示
+  resetButton.hidden = true;
+
+  // デバッグボタンは一度すべて非表示にする
   debugButton.hidden = true;
   debugEeteButton.hidden = true;
   debugTangomuButton.hidden = true;
 
+  // デバッグモードがONで、クリア前なら表示
   if (DEBUG_MODE && !cleared) {
     debugButton.hidden = false;
     debugEeteButton.hidden = false;
