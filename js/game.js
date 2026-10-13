@@ -1,4 +1,3 @@
-
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
@@ -29,19 +28,79 @@ let cleared = false;
 let chanceMode = false;
 let chanceStep = 0;
 
+// チャンス演出中の操作制御
+let animationLock = false;
+let chanceTimer = null;
+
 const lettersEl = document.getElementById("letters");
 const statusEl = document.getElementById("status");
 const countEl = document.getElementById("count");
 const sparkleEl = document.getElementById("sparkle");
+
 const debugButton = document.getElementById("debug");
 const debugEeteButton = document.getElementById("debugEete");
 const debugTangomuButton = document.getElementById("debugTangomu");
+
 const confettiEl = document.getElementById("confetti");
+const chanceOverlay = document.getElementById("chanceOverlay");
+
+// 操作対象のボタン
+const gameButtons = document.querySelectorAll(".buttons button");
 
 // デバッグボタンはデバッグモード中だけ表示
 debugButton.hidden = !DEBUG_MODE;
 debugEeteButton.hidden = !DEBUG_MODE;
 debugTangomuButton.hidden = !DEBUG_MODE;
+
+
+// たんごむチャンスのポップアップ表示
+function showChanceAnnouncement() {
+  animationLock = true;
+
+  // すべてのゲームボタンを無効化
+  gameButtons.forEach((button) => {
+    button.disabled = true;
+  });
+
+  // アニメーションを最初から再生
+  chanceOverlay.classList.remove("show");
+  void chanceOverlay.offsetWidth;
+
+  chanceOverlay.setAttribute("aria-hidden", "false");
+  chanceOverlay.classList.add("show");
+
+  // 0.5秒後にポップアップを消す
+  chanceTimer = setTimeout(() => {
+    chanceOverlay.classList.remove("show");
+    chanceOverlay.setAttribute("aria-hidden", "true");
+
+    gameButtons.forEach((button) => {
+      button.disabled = false;
+    });
+
+    animationLock = false;
+    chanceTimer = null;
+  }, 500);
+}
+
+
+// ポップアップを消して操作ロックを解除
+function hideChanceAnnouncement() {
+  if (chanceTimer !== null) {
+    clearTimeout(chanceTimer);
+    chanceTimer = null;
+  }
+
+  chanceOverlay.classList.remove("show");
+  chanceOverlay.setAttribute("aria-hidden", "true");
+
+  gameButtons.forEach((button) => {
+    button.disabled = false;
+  });
+
+  animationLock = false;
+}
+
 
 // targetの文字をランダムに並べ替える
 function shuffledCopy() {
@@ -56,6 +115,7 @@ function shuffledCopy() {
 }
 
 
+// シークレットの抽選
 function drawRareString() {
   const roll = Math.floor(Math.random() * 300000);
 
@@ -102,6 +162,7 @@ function render() {
   });
 }
 
+
 // クリア判定
 function winGame() {
   const current = letters.join("");
@@ -136,9 +197,11 @@ function winGame() {
   }
 }
 
+
 // シャッフルボタンの処理
 function shuffle() {
-  if (cleared) return;
+  // クリア済み、または演出中なら操作を受け付けない
+  if (cleared || animationLock) return;
 
   count++;
   countEl.textContent = count;
@@ -251,6 +314,9 @@ function shuffle() {
     sparkleEl.classList.remove("show");
     confettiEl.replaceChildren();
 
+    // ポップアップを0.5秒間表示
+    showChanceAnnouncement();
+
     return;
   }
 
@@ -270,9 +336,10 @@ function shuffle() {
   }
 }
 
+
 // デバッグ用クリア
 function debugClear() {
-  if (cleared) return;
+  if (cleared || animationLock) return;
 
   count++;
   countEl.textContent = count;
@@ -288,9 +355,10 @@ function debugClear() {
   winGame();
 }
 
+
 // デバッグ用：シークレットの表示を開始
 function startDebugRareString(rareString) {
-  if (cleared) return;
+  if (cleared || animationLock) return;
 
   rareStringMode = true;
   activeRareString = rareString;
@@ -312,23 +380,30 @@ function startDebugRareString(rareString) {
   confettiEl.replaceChildren();
 }
 
+
 // 紫色のeeteを確認
 function debugEete() {
   startDebugRareString(rareStrings[8]);
 }
+
 
 // 金色のtangomuを確認
 function debugTangomu() {
   startDebugRareString(rareStrings[9]);
 }
 
+
 // ゲームをリセット
 function reset() {
+  // 演出中にリセットされた場合もロックを解除
+  hideChanceAnnouncement();
+
   count = 0;
   cleared = false;
 
   chanceMode = false;
   chanceStep = 0;
+  chanceLetters = [];
 
   rareStringMode = false;
   activeRareString = null;
@@ -350,6 +425,7 @@ function reset() {
   confettiEl.replaceChildren();
 }
 
+
 // ボタンのイベント登録
 document.getElementById("shuffle").addEventListener("click", shuffle);
 document.getElementById("reset").addEventListener("click", reset);
@@ -358,4 +434,6 @@ debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
 debugTangomuButton.addEventListener("click", debugTangomu);
 
+
+// ゲーム開始
 reset();
