@@ -6,6 +6,24 @@ import { target, DEBUG_MODE, CHANCE } from "./config.js";
 let letters = [];
 let chanceLetters = [];
 let count = 0;
+
+const rareStrings = [
+  "itta",
+  "yonten",
+  "waga",
+  "satchin",
+  "kinade",
+  "reoneko",
+  "oreo",
+  "shio",
+];
+
+const RARE_STRING_CHANCE = 1 / 1000;
+
+let rareStringMode = false;
+let activeRareString = "";
+let rareStringStep = 0;
+
 let cleared = false;
 let chanceMode = false;
 let chanceStep = 0;
@@ -80,6 +98,26 @@ function shuffle() {
   count++;
   countEl.textContent = count;
 
+  
+  // 隠し文字列イベント中は、1文字ずつ追加する
+  if (rareStringMode) {
+    letters.push(activeRareString[rareStringStep]);
+    rareStringStep++;
+
+    render();
+
+    if (rareStringStep >= activeRareString.length) {
+      rareStringMode = false;
+      statusEl.textContent =
+        `レア文字列「${activeRareString}」出現！`;
+      activeRareString = "";
+      rareStringStep = 0;
+    }
+
+    return;
+  }
+
+
   if (chanceMode) {
     if (chanceStep >= 4) {
       chanceMode = false;
@@ -125,6 +163,24 @@ if (letters.length === 7) {
     return;
   }
 
+
+  // 1/1000で隠し文字列イベント発生
+  if (Math.random() < RARE_STRING_CHANCE) {
+    rareStringMode = true;
+
+    activeRareString =
+      rareStrings[Math.floor(Math.random() * rareStrings.length)];
+
+    rareStringStep = 1;
+    letters = [activeRareString[0]];
+
+    render();
+    statusEl.textContent = "？？？ レア文字列の予感……";
+
+    return;
+  }
+
+  
   if (Math.random() < CHANCE) {
     chanceMode = true;
     chanceStep = 0;
@@ -173,6 +229,9 @@ function reset() {
   cleared = false;
   chanceMode = false;
   chanceStep = 0;
+  rareStringMode = false;
+activeRareString = "";
+rareStringStep = 0;
   countEl.textContent = "0";
 
   letters = shuffledCopy();
