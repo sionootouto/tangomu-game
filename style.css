@@ -332,3 +332,12 @@ body.chance-animation button {
     transition: none !important;
   }
 }
+
+/* チャンス演出中のダブルタップズーム対策 */
+body.chance-animation {
+  touch-action: manipulation;
+}
+
+body.chance-animation button {
+  touch-action: manipulation;
+}
