@@ -377,3 +377,15 @@ body.chance-animation button {
     transition: none !important;
   }
 }
+
+html,
+body,
+main {
+  touch-action: manipulation;
+}
+
+button,
+button * {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
