@@ -70,7 +70,7 @@ function drawRareString() {
   }
 
   // tangomu：1/20000
-  if (roll < 330) {
+  if (roll < 10000) {
     return rareStrings[9];
   }
 
