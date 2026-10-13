@@ -95,6 +95,7 @@
     <div class="buttons">
       <button class="primary" id="shuffle">シャッフル！</button>
       <button class="secondary" id="reset">最初から</button>
+      <button class="secondary" id="debug">🛠️ クリア演出テスト</button>
     </div>
     <div id="status" role="status" aria-live="polite">「シャッフル！」を押して挑戦しよう。</div>
     <div id="sparkle" class="sparkle" aria-hidden="true">🎉 ✨ 🎉</div>
@@ -159,6 +160,20 @@ function launchConfetti() {
     container.appendChild(piece);
   }
 }
+function debugClear() {
+  letters = ["t", "a", "n", "g", "o", "m", "u"];
+  count++;
+  countEl.textContent = count;
+  cleared = true;
+
+  render();
+
+  statusEl.textContent = "クリア！\n君が真のたんごむだ！";
+  statusEl.classList.add("win");
+  sparkleEl.classList.add("show");
+
+  launchConfetti();
+}
 
     function shuffle() {
       if (cleared) return;
@@ -192,6 +207,7 @@ if (cleared) {
       document.getElementById("confetti").replaceChildren();
     }
     document.getElementById("shuffle").addEventListener("click", shuffle);
+    document.getElementById("debug").addEventListener("click", debugClear);
     document.getElementById("reset").addEventListener("click", reset);
     reset();
   </script>
