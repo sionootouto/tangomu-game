@@ -45,23 +45,34 @@ function winGame() {
   const current = letters.join("");
   const isBigWin = current === target;
 
-  cleared = true;
-  chanceMode = false;
-  render();
-
-  statusEl.textContent =
-    reactionLines[current] || "......";
-
   if (isBigWin) {
+    cleared = true;
+    chanceMode = false;
+    render();
+
+    statusEl.textContent =
+      reactionLines[current] || "クリア！\n君が真のたんごむだ！";
+
     statusEl.classList.add("win");
     sparkleEl.classList.add("show");
     launchConfetti(confettiEl);
   } else {
+    // ハズレならゲームを終了しない
+    cleared = false;
+    chanceMode = false;
+    chanceStep = 0;
+
+    render();
+
+    statusEl.textContent =
+      reactionLines[current] || "...";
+
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
     confettiEl.replaceChildren();
   }
 }
+
 
 function shuffle() {
   if (cleared) return;
