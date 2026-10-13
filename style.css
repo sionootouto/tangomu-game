@@ -320,3 +320,23 @@ body.chance-animation * {
 body.chance-animation {
   overscroll-behavior: none;
 }
+
+/* チャンス演出中のタッチ操作を制限 */
+body.chance-animation {
+  touch-action: none !important;
+  overscroll-behavior: none;
+}
+
+body.chance-animation,
+body.chance-animation * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* スマホでのボタン連続タップによるズームを抑制 */
+button,
+.chance-overlay {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
