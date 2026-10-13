@@ -89,7 +89,7 @@
 <body>
   <main>
     <div class="eyebrow">MINI WORD GAME</div>
-    <h1>たんごむ2チャレンジ</h1>
+    <h1>たんごむ3チャレンジ</h1>
     <p>7文字をシャッフルして、<strong>tangomu</strong> を完成させよう！</p>
     <div class="letters" id="letters" aria-label="現在の文字列"></div>
     <div class="buttons">
@@ -214,13 +214,16 @@
 
     render();
 
-    if (chanceStep === 3) {
-      statusEl.textContent =
-        "今回はハズレ！ もう一度押して再挑戦！";
-    } else {
-      statusEl.textContent =
-        "チャンス継続中！ 次の文字を出そう！";
-    }
+    // 正しい順番で文字が並んでいるか確認
+const current = letters.join("");
+
+if (current === "tango" || current === "tangom") {
+  statusEl.textContent =
+    "チャンス継続中！ 次の文字を出そう！";
+} else {
+  statusEl.textContent =
+    "今回はハズレ！ もう一度押して再挑戦！";
+}
 
     return;
   }
