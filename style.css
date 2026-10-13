@@ -181,48 +181,20 @@ button:active {
   }
 }
 
-
-
-/* 紫色：重厚なメタリックパープル */
+/* 紫色：シンプルな単色パープル */
 .letter.rare-purple {
-  box-sizing: border-box;
-  background: linear-gradient(
-    135deg,
-    #f0d9ff 0%,
-    #a855f7 18%,
-    #6b21a8 42%,
-    #c084fc 55%,
-    #581c87 78%,
-    #a855f7 100%
-  );
+  background: #8e44ad;
   color: #ffffff;
-  border: 2px solid #d8b4fe;
-  text-shadow: 0 1px 2px #3b0764;
-  box-shadow:
-    inset 0 1px 2px #f3e8ff,
-    inset 0 -3px 4px #3b0764,
-    0 0 5px rgba(168, 85, 247, 0.45);
+  border: 2px solid #8e44ad;
+  box-shadow: none;
+  text-shadow: none;
 }
 
-/* 金色：重厚なメタリックゴールド */
+/* 金色：シンプルな単色ゴールド */
 .letter.rare-gold {
-  box-sizing: border-box;
-  background: linear-gradient(
-    135deg,
-    #fff2a6 0%,
-    #d4af37 18%,
-    #8a6d1d 38%,
-    #ffe680 50%,
-    #b8860b 65%,
-    #6f5315 82%,
-    #d4af37 100%
-  );
+  background: #d4af37;
   color: #382600;
-  border: 2px solid #f5d76e;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35);
-  box-shadow:
-    inset 0 1px 2px #fff8d6,
-    inset 0 -3px 4px #65470a,
-    0 0 7px rgba(212, 175, 55, 0.4);
+  border: 2px solid #d4af37;
+  box-shadow: none;
+  text-shadow: none;
 }
-
