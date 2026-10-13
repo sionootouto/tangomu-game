@@ -54,23 +54,28 @@ function shuffledCopy() {
 
   return arr;
 }
-function drawRareString() {
-  const roll = Math.floor(Math.random() * 40000);
 
-  if (roll < 320) {
-    return rareStrings[Math.floor(roll / 40)];
+function drawRareString() {
+  const roll = Math.floor(Math.random() * 30000);
+
+  // 通常シークレット8種類：それぞれ1/10000
+  if (roll < 24) {
+    return rareStrings[Math.floor(roll / 3)];
   }
 
-  if (roll < 328) {
+  // 紫シークレット eete：1/6000
+  if (roll < 29) {
     return rareStrings[8];
   }
 
-  if (roll < 330) {
+  // 金シークレット tangomu：1/30000
+  if (roll < 30) {
     return rareStrings[9];
   }
 
   return null;
 }
+
 // 文字ボックスを表示する
 function render() {
   lettersEl.replaceChildren();
