@@ -22,7 +22,8 @@
     <div id="confetti" aria-hidden="true"></div>
     <div class="count">シャッフル回数：<span id="count">0</span></div>
   </main>
-<script>
+<script type="module">
+  import { launchConfetti } from "./js/effects.js";
   const target = "tangomu";
   const DEBUG_MODE = false;
   const CHANCE = 1 / 30;
@@ -65,28 +66,6 @@
     });
   }
 
-  function launchConfetti() {
-    const colors = [
-      "#ff4d6d", "#ffd166", "#06d6a0",
-      "#4dabf7", "#9b5de5", "#ff85c1"
-    ];
-
-    confettiEl.replaceChildren();
-
-    for (let i = 0; i < 100; i++) {
-      const piece = document.createElement("span");
-      piece.className = "confetti-piece";
-      piece.style.left = Math.random() * 100 + "%";
-      piece.style.backgroundColor =
-        colors[Math.floor(Math.random() * colors.length)];
-      piece.style.animationDelay = Math.random() * 1.5 + "s";
-      piece.style.animationDuration =
-        (2.5 + Math.random() * 2) + "s";
-      piece.style.transform = `rotate(${Math.random() * 360}deg)`;
-      confettiEl.appendChild(piece);
-    }
-  }
-
   function winGame() {
     cleared = true;
     chanceMode = false;
@@ -95,7 +74,7 @@
     statusEl.textContent = "クリア！\n君が真のたんごむだ！";
     statusEl.classList.add("win");
     sparkleEl.classList.add("show");
-    launchConfetti();
+    launchConfetti(confettiEl);
   }
 
   function shuffle() {
@@ -218,6 +197,6 @@ if (current === "tang" || current === "tango" || current === "tangom") {
   debugButton.addEventListener("click", debugClear);
 
   reset();
-</script>
+</script type="module">
 </body>
 </html>
