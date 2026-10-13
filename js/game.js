@@ -30,6 +30,7 @@ let chanceStep = 0;
 
 let animationLock = false;
 let chanceTimer = null;
+let secretTimer = null;
 
 // HTML要素
 const lettersEl = document.getElementById("letters");
@@ -59,16 +60,13 @@ debugTangomuButton.hidden = !DEBUG_MODE;
 // ========================================
 
 function updateButtons() {
-  // クリアしたら「最初から」だけを表示
   shuffleButton.hidden = cleared;
   resetButton.hidden = !cleared;
 
-  // デバッグボタンは通常画面では表示しない
   debugButton.hidden = true;
   debugEeteButton.hidden = true;
   debugTangomuButton.hidden = true;
 
-  // デバッグモードでは、クリア前だけデバッグボタンを表示
   if (DEBUG_MODE && !cleared) {
     debugButton.hidden = false;
     debugEeteButton.hidden = false;
@@ -92,7 +90,6 @@ document.addEventListener(
 
     const now = Date.now();
 
-    // チャンス演出中、短時間の連続タップによるズームを抑制
     if (now - lastChanceTouchEnd < 700) {
       event.preventDefault();
     }
@@ -110,7 +107,7 @@ function showChanceAnnouncement() {
   animationLock = true;
   document.body.classList.add("chance-animation");
 
-  // ボタンは灰色に見せるが、disabledにはしない
+  // 既存の見た目の処理はそのまま維持
   gameButtons.forEach((button) => {
     button.classList.add("chance-disabled-look");
   });
@@ -154,6 +151,25 @@ function hideChanceAnnouncement() {
 
   animationLock = false;
   lastChanceTouchEnd = 0;
+}
+
+// ========================================
+// シークレット中の操作停止
+// ========================================
+
+function startSecretPause() {
+  // 直前の停止タイマーがあれば解除
+  if (secretTimer !== null) {
+    clearTimeout(secretTimer);
+  }
+
+  animationLock = true;
+
+  // 1秒後に操作を再開
+  secretTimer = setTimeout(() => {
+    secretTimer = null;
+    animationLock = false;
+  }, 1000);
 }
 
 // ========================================
@@ -261,7 +277,7 @@ function winGame() {
 // ========================================
 
 function shuffle() {
-  // クリア後、または演出中はゲーム処理を実行しない
+  // クリア後、または演出・停止中は処理しない
   if (cleared || animationLock) return;
 
   count++;
@@ -274,6 +290,7 @@ function shuffle() {
 
     render();
 
+    // シークレットが完成したか判定
     if (rareStringStep >= activeRareString.text.length) {
       statusEl.textContent =
         `${activeRareString.display} シークレット${activeRareString.number}/10`;
@@ -281,7 +298,13 @@ function shuffle() {
       rareStringMode = false;
       activeRareString = null;
       rareStringStep = 0;
+
+      // 完成後は停止しない
+      return;
     }
+
+    // 完成前は次の文字まで1秒間停止
+    startSecretPause();
 
     return;
   }
@@ -343,6 +366,9 @@ function shuffle() {
     letters = [activeRareString.text[0]];
 
     render();
+
+    // 1文字目が出た瞬間から1秒間停止
+    startSecretPause();
 
     statusEl.textContent = "おっと...？";
 
@@ -439,6 +465,9 @@ function startDebugRareString(rareString) {
 
   render();
 
+  // デバッグ時も1文字目から1秒間停止
+  startSecretPause();
+
   statusEl.textContent = `デバッグ：${rareString.display} シークレット`;
 
   statusEl.classList.remove("win");
@@ -462,6 +491,14 @@ function debugTangomu() {
 
 function reset() {
   hideChanceAnnouncement();
+
+  // シークレット停止中にリセットした場合も解除
+  if (secretTimer !== null) {
+    clearTimeout(secretTimer);
+    secretTimer = null;
+  }
+
+  animationLock = false;
 
   count = 0;
   cleared = false;
