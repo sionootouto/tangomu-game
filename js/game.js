@@ -10,9 +10,9 @@ let count = 0;
 // シークレット全10種類
 const rareStrings = [
   { text: "itta", display: "いった", number: 1, color: "normal" },
-  { text: "yonten", display: "よんてん", number: 2, color: "normal" },
+  { text: "yontenn", display: "よんてん", number: 2, color: "normal" },
   { text: "waga", display: "わが", number: 3, color: "normal" },
-  { text: "satchin", display: "さっちん", number: 4, color: "normal" },
+  { text: "sattin", display: "さっちん", number: 4, color: "normal" },
   { text: "kinade", display: "きなで", number: 5, color: "normal" },
   { text: "reoneko", display: "れおねこ", number: 6, color: "normal" },
   { text: "oreo", display: "おれお", number: 7, color: "normal" },
