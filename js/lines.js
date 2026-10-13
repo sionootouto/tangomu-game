@@ -10,7 +10,7 @@ export const reactionLines = {
   "tanogum": "たのぐむ、知らない動詞？",
   "tanomug": "たのむぐ、インフルエンサー？",
   "tanomgu": "たのむぐ、インフルエンサー？",
-  "tanoumg": "たのうむぐ、赤銀七段のSN？",
+  "tanoumg": "たのうむぐ、赤銀三段のSN？",
   "tanougm": "たのうぐむ、知らん動詞の派生系？",
   "tanmgou": "たんむごう、漢検一級で出る三字熟語？",
   "tanmguo": "たんむぐお、キン一族？",
