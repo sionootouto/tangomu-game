@@ -109,6 +109,7 @@ button:active {
   margin-top: 20px;
   font-weight: 750;
   color: #5c5b70;
+  white-space: pre-line;
 }
 #status.win {
   color: #16804a;
