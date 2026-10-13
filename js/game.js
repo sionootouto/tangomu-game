@@ -8,20 +8,31 @@ let chanceLetters = [];
 let count = 0;
 
 const rareStrings = [
-  "itta",
-  "yontenn",
-  "waga",
-  "sattin",
-  "kinade",
-  "reoneko",
-  "oreo",
-  "shio",
+
+  { text: "itta", display: "いった", number: 1 },
+
+  { text: "yonten", display: "よんてん", number: 2 },
+
+  { text: "waga", display: "わが", number: 3 },
+
+  { text: "satchin", display: "さっちん", number: 4 },
+
+  { text: "kinade", display: "きなで", number: 5 },
+
+  { text: "reoneko", display: "れおねこ", number: 6 },
+
+  { text: "oreo", display: "おれお", number: 7 },
+
+  { text: "shio", display: "しお", number: 8 },
+
 ];
+
+
 
 const RARE_STRING_CHANCE = 1 / 1000;
 
 let rareStringMode = false;
-let activeRareString = "";
+let activeRareString = null;
 let rareStringStep = 0;
 
 let cleared = false;
@@ -101,13 +112,22 @@ function shuffle() {
   
   // 隠し文字列イベント中は、1文字ずつ追加する
   if (rareStringMode) {
-    letters.push(activeRareString[rareStringStep]);
+    letters.push(activeRareString.text[rareStringStep]);
     rareStringStep++;
 
     render();
 
-    if (rareStringStep >= activeRareString.length) {
-      rareStringMode = false;
+    
+if (rareStringStep >= activeRareString.text.length) {
+  rareStringMode = false;
+
+  statusEl.textContent =
+    `${activeRareString.display} シークレット${activeRareString.number}/8`;
+
+  activeRareString = null;
+  rareStringStep = 0;
+}
+
       statusEl.textContent =
         `レア文字列「${activeRareString}」出現！`;
       activeRareString = "";
@@ -172,10 +192,10 @@ if (letters.length === 7) {
       rareStrings[Math.floor(Math.random() * rareStrings.length)];
 
     rareStringStep = 1;
-    letters = [activeRareString[0]];
+    letters = [activeRareString.text[0]];
 
     render();
-    statusEl.textContent = "？？？ レア文字列の予感……";
+    statusEl.textContent = "おっと...？";
 
     return;
   }
