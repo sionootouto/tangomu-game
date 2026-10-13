@@ -15,6 +15,7 @@ button {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -176,7 +177,7 @@ button:disabled {
   }
 }
 
-/* たんごむチャンスのシンプルな表示 */
+/* たんごむチャンスの表示 */
 .chance-overlay {
   position: fixed;
   top: 50%;
@@ -184,6 +185,7 @@ button:disabled {
   transform: translate(-50%, -50%);
   z-index: 10000;
 
+  max-width: calc(100vw - 24px);
   background: #ffffff;
   color: #000000;
   border: 2px solid #000000;
@@ -197,6 +199,10 @@ button:disabled {
 
   display: none;
   pointer-events: none;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .chance-overlay.show {
@@ -251,7 +257,9 @@ button:disabled {
 }
 
 /* デバッグボタン */
-#debug[hidden] {
+#debug[hidden],
+#debugEete[hidden],
+#debugTangomu[hidden] {
   display: none !important;
 }
 
@@ -298,6 +306,23 @@ button:disabled {
     0 0 7px rgba(212, 175, 55, 0.4);
 }
 
+/* チャンス演出中の選択・長押しメニューを防ぐ */
+body.chance-animation {
+  overscroll-behavior: none;
+}
+
+body.chance-animation,
+body.chance-animation * {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+/* チャンス演出中もボタンのタップ操作を維持 */
+body.chance-animation button {
+  touch-action: manipulation;
+}
+
 /* 動きを減らす設定が有効な端末への配慮 */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -306,37 +331,4 @@ button:disabled {
     animation: none !important;
     transition: none !important;
   }
-}
-
-/* たんごむチャンス演出中の連続タップズームを防ぐ */
-body.chance-animation,
-body.chance-animation * {
-  touch-action: none !important;
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-touch-callout: none !important;
-}
-
-body.chance-animation {
-  overscroll-behavior: none;
-}
-
-/* チャンス演出中のタッチ操作を制限 */
-body.chance-animation {
-  touch-action: none !important;
-  overscroll-behavior: none;
-}
-
-body.chance-animation,
-body.chance-animation * {
-  -webkit-user-select: none !important;
-  user-select: none !important;
-  -webkit-touch-callout: none !important;
-}
-
-/* スマホでのボタン連続タップによるズームを抑制 */
-button,
-.chance-overlay {
-  touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
 }
