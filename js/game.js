@@ -179,12 +179,19 @@ function startSecretPause() {
 function shuffledCopy() {
   const array = ["t", "a", "n", "g", "o", "m", "u"];
 
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
+  // target（tangomu）が揃った場合はシャッフルし直す
+  let result;
 
-  return array;
+  do {
+    result = [...array];
+
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+  } while (result.join("") === target);
+
+  return result;
 }
 
 // ========================================
