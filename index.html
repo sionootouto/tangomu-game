@@ -108,6 +108,7 @@
   const CHANCE = 1 / 100;
 
   let letters = [];
+  let chanceLetters = [];
   let count = 0;
   let cleared = false;
   let chanceMode = false;
@@ -185,8 +186,7 @@
 
     // たんごむチャンス中は、押すたびに1文字追加
     if (chanceMode) {
-      const nextLetters = ["o", "m", "u"];
-      letters.push(nextLetters[chanceStep]);
+      letters.push(chanceLetters[chanceStep]);
       chanceStep++;
 
       if (letters.join("") === target) {
@@ -207,8 +207,18 @@
     // 通常時：1/100の確率で「tang」チャンス発生
     if (Math.random() < CHANCE) {
       chanceMode = true;
-      chanceStep = 0;
-      letters = ["t", "a", "n", "g"];
+chanceStep = 0;
+chanceLetters = shuffledCopy().slice(0, 0); // この行は使わない
+chanceLetters = ["o", "m", "u"];
+
+// 後ろ3文字をランダムに並べ替える
+for (let i = chanceLetters.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [chanceLetters[i], chanceLetters[j]] =
+    [chanceLetters[j], chanceLetters[i]];
+}
+
+letters = ["t", "a", "n", "g"];
       render();
 
       statusEl.textContent = "たんごむチャンス！";
