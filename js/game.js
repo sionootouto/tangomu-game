@@ -101,7 +101,7 @@ if (letters.length === 7) {
         "チャンス継続中！ 次の文字を出そう！";
     } else {
       statusEl.textContent =
-        "今回はハズレ！ もう一度押して再挑戦！";
+        "...";
     }
 
     return;
