@@ -223,7 +223,7 @@ function shuffle() {
   }
 
   // たんごむチャンスの抽選
-  if (Math.random() < CHANCE) {
+  if (Math.random() < 0.1) {
     chanceMode = true;
     chanceStep = 0;
 
