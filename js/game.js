@@ -55,6 +55,9 @@ debugTangomuButton.hidden = !DEBUG_MODE;
 
 // たんごむチャンスのポップアップ表示
 function showChanceAnnouncement() {
+  function showChanceAnnouncement() {
+  animationLock = true;
+  document.body.classList.add("chance-animation");
   animationLock = true;
 
   // すべてのゲームボタンを無効化
@@ -74,6 +77,8 @@ function showChanceAnnouncement() {
     chanceOverlay.classList.remove("show");
     chanceOverlay.setAttribute("aria-hidden", "true");
 
+    document.body.classList.remove("chance-animation");
+
     gameButtons.forEach((button) => {
       button.disabled = false;
     });
@@ -86,6 +91,7 @@ function showChanceAnnouncement() {
 
 // ポップアップを消して操作ロックを解除
 function hideChanceAnnouncement() {
+  document.body.classList.remove("chance-animation");
   if (chanceTimer !== null) {
     clearTimeout(chanceTimer);
     chanceTimer = null;
