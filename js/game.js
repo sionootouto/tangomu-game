@@ -59,25 +59,25 @@ debugTangomuButton.hidden = !DEBUG_MODE;
 // ボタン表示の切り替え
 // ========================================
 
+
 function updateButtons() {
-  // シャッフルボタンはクリア前だけ表示
+  // ゲーム中はシャッフル、クリア後は最初から
   shuffleButton.hidden = cleared;
+  resetButton.hidden = !cleared;
 
-  // 「最初から」ボタンは常に非表示
-  resetButton.hidden = true;
-
-  // デバッグボタンは一度すべて非表示にする
+  // デバッグボタンは一度すべて非表示
   debugButton.hidden = true;
   debugEeteButton.hidden = true;
   debugTangomuButton.hidden = true;
 
-  // デバッグモードがONで、クリア前なら表示
+  // デバッグモードがONなら、ゲーム中に表示
   if (DEBUG_MODE && !cleared) {
     debugButton.hidden = false;
     debugEeteButton.hidden = false;
     debugTangomuButton.hidden = false;
   }
 }
+
 
 // ========================================
 // チャンス演出中のダブルタップズーム対策
