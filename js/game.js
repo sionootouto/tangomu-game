@@ -9,9 +9,9 @@ let count = 0;
 
 const rareStrings = [
   "itta",
-  "yonten",
+  "yontenn",
   "waga",
-  "satchin",
+  "sattin",
   "kinade",
   "reoneko",
   "oreo",
