@@ -194,7 +194,7 @@ button {
   // たんごむチャンス中
   if (chanceMode) {
     // すでに7文字まで表示されていたら、通常モードに戻す
-    if (chanceStep >= 3) {
+    if (chanceStep >= 4) {
       chanceMode = false;
       chanceStep = 0;
 
@@ -224,7 +224,7 @@ button {
     // 正しい順番で文字が並んでいるか確認
 const current = letters.join("");
 
-if (current === "tango" || current === "tangom") {
+if (current ＝＝＝ "tang" || current === "tango" || current === "tangom") {
   statusEl.textContent =
     "チャンス継続中！ 次の文字を出そう！";
 } else {
@@ -240,7 +240,7 @@ if (current === "tango" || current === "tangom") {
     chanceMode = true;
     chanceStep = 0;
 
-    chanceLetters = ["o", "m", "u"];
+    chanceLetters = ["g", "o", "m", "u"];
 
     // 後ろ3文字をランダムに並べ替える
     for (let i = chanceLetters.length - 1; i > 0; i--) {
@@ -249,7 +249,7 @@ if (current === "tango" || current === "tangom") {
         [chanceLetters[j], chanceLetters[i]];
     }
 
-    letters = ["t", "a", "n", "g"];
+    letters = ["t", "a", "n"];
     render();
 
     statusEl.textContent = "たんごむチャンス！";
