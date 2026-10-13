@@ -6,7 +6,6 @@ let letters = [];
 let chanceLetters = [];
 let count = 0;
 
-// シークレット全10種類
 const rareStrings = [
   { text: "itta", display: "いった", number: 1, color: "normal" },
   { text: "yontenn", display: "よんてん", number: 2, color: "normal" },
@@ -25,13 +24,14 @@ let activeRareString = null;
 let rareStringStep = 0;
 
 let cleared = false;
+
 let chanceMode = false;
 let chanceStep = 0;
 
-// チャンス演出中の操作制御
 let animationLock = false;
 let chanceTimer = null;
 
+// HTML要素
 const lettersEl = document.getElementById("letters");
 const statusEl = document.getElementById("status");
 const countEl = document.getElementById("count");
@@ -44,49 +44,61 @@ const debugTangomuButton = document.getElementById("debugTangomu");
 const confettiEl = document.getElementById("confetti");
 const chanceOverlay = document.getElementById("chanceOverlay");
 
-// 操作対象のボタン
 const gameButtons = document.querySelectorAll(".buttons button");
-// ダブルタップによるズームを抑制
-let lastTouchEnd = 0;
 
-document.addEventListener(
-  "touchend",
-  (event) => {
-    const now = Date.now();
-
-    if (now - lastTouchEnd <= 350) {
-      event.preventDefault();
-    }
-
-    lastTouchEnd = now;
-  },
-  { passive: false }
-);
-
-// デバッグボタンはデバッグモード中だけ表示
+// デバッグボタンの表示設定
 debugButton.hidden = !DEBUG_MODE;
 debugEeteButton.hidden = !DEBUG_MODE;
 debugTangomuButton.hidden = !DEBUG_MODE;
 
+// ========================================
+// チャンス演出中のダブルタップズーム対策
+// ========================================
 
-// たんごむチャンスのポップアップ表示
+let lastChanceTouchEnd = 0;
+
+document.addEventListener(
+  "touchend",
+  (event) => {
+    // チャンス演出中以外は何もしない
+    if (!document.body.classList.contains("chance-animation")) {
+      lastChanceTouchEnd = 0;
+      return;
+    }
+
+    const now = Date.now();
+
+    // チャンス演出中の連続タップによるズームを抑制
+    if (now - lastChanceTouchEnd < 350) {
+      event.preventDefault();
+    }
+
+    lastChanceTouchEnd = now;
+  },
+  { passive: false }
+);
+
+// ========================================
+// チャンス演出
+// ========================================
+
 function showChanceAnnouncement() {
   animationLock = true;
+
   document.body.classList.add("chance-animation");
 
-  // すべてのゲームボタンを無効化
   gameButtons.forEach((button) => {
     button.disabled = true;
   });
 
-  // アニメーションを最初から再生
   chanceOverlay.classList.remove("show");
+
+  // アニメーションを再スタート
   void chanceOverlay.offsetWidth;
 
   chanceOverlay.setAttribute("aria-hidden", "false");
   chanceOverlay.classList.add("show");
 
-  // 0.5秒後にポップアップを消す
   chanceTimer = setTimeout(() => {
     chanceOverlay.classList.remove("show");
     chanceOverlay.setAttribute("aria-hidden", "true");
@@ -99,11 +111,10 @@ function showChanceAnnouncement() {
 
     animationLock = false;
     chanceTimer = null;
+    lastChanceTouchEnd = 0;
   }, 500);
 }
 
-
-// ポップアップを消して操作ロックを解除
 function hideChanceAnnouncement() {
   if (chanceTimer !== null) {
     clearTimeout(chanceTimer);
@@ -120,37 +131,42 @@ function hideChanceAnnouncement() {
   });
 
   animationLock = false;
+  lastChanceTouchEnd = 0;
 }
 
+// ========================================
+// 配列のシャッフル
+// ========================================
 
-// targetの文字をランダムに並べ替える
 function shuffledCopy() {
-  const arr = target.split("");
+  const array = ["t", "a", "n", "g", "o", "m", "u"];
 
-  for (let i = arr.length - 1; i > 0; i--) {
+  for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    [array[i], array[j]] = [array[j], array[i]];
   }
 
-  return arr;
+  return array;
 }
 
+// ========================================
+// レア文字列抽選
+// ========================================
 
-// シークレットの抽選
 function drawRareString() {
   const roll = Math.floor(Math.random() * 300000);
 
-  // 通常シークレット8種類：それぞれ1/10000
+  // 通常シークレット8種類：各1/10000
   if (roll < 240) {
     return rareStrings[Math.floor(roll / 30)];
   }
 
-  // 紫シークレット eete：1/30000
+  // eete：1/30000
   if (roll < 250) {
     return rareStrings[8];
   }
 
-  // 金シークレット tangomu：1/100000
+  // たんごむ：1/100000
   if (roll < 253) {
     return rareStrings[9];
   }
@@ -158,33 +174,34 @@ function drawRareString() {
   return null;
 }
 
+// ========================================
+// 画面表示
+// ========================================
 
-// 文字ボックスを表示する
 function render() {
   lettersEl.replaceChildren();
 
-  letters.forEach((letter, index) => {
-    const tile = document.createElement("span");
+  letters.forEach((letter) => {
+    const span = document.createElement("span");
+    span.className = "letter";
+    span.textContent = letter;
 
-    tile.className = "letter" + (cleared ? " correct" : "");
-    tile.textContent = letter;
-    tile.setAttribute("aria-label", `${index + 1}文字目 ${letter}`);
-
-    // シークレットの種類によって色を変える
     if (rareStringMode && activeRareString) {
       if (activeRareString.color === "purple") {
-        tile.classList.add("rare-purple");
+        span.classList.add("rare-purple");
       } else if (activeRareString.color === "gold") {
-        tile.classList.add("rare-gold");
+        span.classList.add("rare-gold");
       }
     }
 
-    lettersEl.appendChild(tile);
+    lettersEl.appendChild(span);
   });
 }
 
+// ========================================
+// ゲームクリア判定
+// ========================================
 
-// クリア判定
 function winGame() {
   const current = letters.join("");
   const isBigWin = current === target;
@@ -201,9 +218,9 @@ function winGame() {
 
     statusEl.classList.add("win");
     sparkleEl.classList.add("show");
+
     launchConfetti(confettiEl);
   } else {
-    // ハズレならゲームを終了しない
     cleared = false;
     chanceMode = false;
     chanceStep = 0;
@@ -218,23 +235,27 @@ function winGame() {
   }
 }
 
+// ========================================
+// シャッフルボタン
+// ========================================
 
-// シャッフルボタンの処理
 function shuffle() {
-  // クリア済み、または演出中なら操作を受け付けない
+  // クリア後、またはチャンス演出中は処理しない
   if (cleared || animationLock) return;
 
   count++;
   countEl.textContent = count;
 
-  // シークレット発生中は1文字ずつ追加
+  // ----------------------------------------
+  // レア文字列の表示中
+  // ----------------------------------------
+
   if (rareStringMode) {
     letters.push(activeRareString.text[rareStringStep]);
     rareStringStep++;
 
     render();
 
-    // 文字列が完成したとき
     if (rareStringStep >= activeRareString.text.length) {
       statusEl.textContent =
         `${activeRareString.display} シークレット${activeRareString.number}/10`;
@@ -247,7 +268,10 @@ function shuffle() {
     return;
   }
 
-  // たんごむチャンス中の処理
+  // ----------------------------------------
+  // たんごむチャンス中
+  // ----------------------------------------
+
   if (chanceMode) {
     if (chanceStep >= 4) {
       chanceMode = false;
@@ -255,6 +279,7 @@ function shuffle() {
 
       letters = shuffledCopy();
       cleared = letters.join("") === target;
+
       render();
 
       if (cleared) {
@@ -269,6 +294,7 @@ function shuffle() {
     letters.push(chanceLetters[chanceStep]);
     chanceStep++;
 
+    // 7文字そろったら判定
     if (letters.length === 7) {
       winGame();
       return;
@@ -283,8 +309,7 @@ function shuffle() {
       current === "tango" ||
       current === "tangom"
     ) {
-      statusEl.textContent =
-        "チャンス継続中！ 次の文字を出そう！";
+      statusEl.textContent = "チャンス継続中！ 次の文字を出そう！";
     } else {
       statusEl.textContent = "...";
     }
@@ -292,18 +317,21 @@ function shuffle() {
     return;
   }
 
-  // シークレットの抽選
+  // ----------------------------------------
+  // レア文字列抽選
+  // ----------------------------------------
+
   const rareString = drawRareString();
 
   if (rareString !== null) {
     rareStringMode = true;
     activeRareString = rareString;
-
-    // 最初の1文字を表示
     rareStringStep = 1;
+
     letters = [activeRareString.text[0]];
 
     render();
+
     statusEl.textContent = "おっと...？";
 
     statusEl.classList.remove("win");
@@ -313,35 +341,44 @@ function shuffle() {
     return;
   }
 
-  // たんごむチャンスの抽選
+  // ----------------------------------------
+  // たんごむチャンス抽選
+  // ----------------------------------------
+
   if (Math.random() < CHANCE) {
     chanceMode = true;
     chanceStep = 0;
 
     chanceLetters = ["g", "o", "m", "u"];
 
+    // g,o,m,uの順番をランダムにする
     for (let i = chanceLetters.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-
-      [chanceLetters[i], chanceLetters[j]] =
-        [chanceLetters[j], chanceLetters[i]];
+      [chanceLetters[i], chanceLetters[j]] = [
+        chanceLetters[j],
+        chanceLetters[i],
+      ];
     }
 
     letters = ["t", "a", "n"];
+
     render();
 
     statusEl.textContent = "たんごむチャンス！";
+
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
     confettiEl.replaceChildren();
 
-    // ポップアップを0.5秒間表示
     showChanceAnnouncement();
 
     return;
   }
 
+  // ----------------------------------------
   // 通常のシャッフル
+  // ----------------------------------------
+
   letters = shuffledCopy();
   cleared = letters.join("") === target;
 
@@ -351,14 +388,17 @@ function shuffle() {
     winGame();
   } else {
     statusEl.textContent = "まだまだ！ もう一回シャッフル！";
+
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
     confettiEl.replaceChildren();
   }
 }
 
+// ========================================
+// デバッグ機能
+// ========================================
 
-// デバッグ用クリア
 function debugClear() {
   if (cleared || animationLock) return;
 
@@ -373,11 +413,10 @@ function debugClear() {
   chanceStep = 0;
 
   letters = target.split("");
+
   winGame();
 }
 
-
-// デバッグ用：シークレットの表示を開始
 function startDebugRareString(rareString) {
   if (cleared || animationLock) return;
 
@@ -389,34 +428,30 @@ function startDebugRareString(rareString) {
   chanceStep = 0;
 
   letters = [rareString.text[0]];
-
   cleared = false;
+
   render();
 
-  statusEl.textContent =
-    `デバッグ：${rareString.display} シークレット`;
+  statusEl.textContent = `デバッグ：${rareString.display} シークレット`;
 
   statusEl.classList.remove("win");
   sparkleEl.classList.remove("show");
   confettiEl.replaceChildren();
 }
 
-
-// 紫色のeeteを確認
 function debugEete() {
   startDebugRareString(rareStrings[8]);
 }
 
-
-// 金色のtangomuを確認
 function debugTangomu() {
   startDebugRareString(rareStrings[9]);
 }
 
+// ========================================
+// リセット
+// ========================================
 
-// ゲームをリセット
 function reset() {
-  // 演出中にリセットされた場合もロックを解除
   hideChanceAnnouncement();
 
   count = 0;
@@ -434,6 +469,7 @@ function reset() {
 
   letters = shuffledCopy();
 
+  // 初期状態で偶然クリアになった場合は再抽選
   if (letters.join("") === target) {
     letters = shuffledCopy();
   }
@@ -441,13 +477,16 @@ function reset() {
   render();
 
   statusEl.textContent = "「シャッフル！」を押して挑戦しよう。";
+
   statusEl.classList.remove("win");
   sparkleEl.classList.remove("show");
   confettiEl.replaceChildren();
 }
 
+// ========================================
+// イベント登録
+// ========================================
 
-// ボタンのイベント登録
 document.getElementById("shuffle").addEventListener("click", shuffle);
 document.getElementById("reset").addEventListener("click", reset);
 
@@ -455,6 +494,5 @@ debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
 debugTangomuButton.addEventListener("click", debugTangomu);
 
-
-// ゲーム開始
+// 初期化
 reset();
