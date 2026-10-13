@@ -40,16 +40,21 @@ function render() {
   });
 }
 
+
 function winGame() {
   cleared = true;
   chanceMode = false;
   render();
 
-  statusEl.textContent = "クリア！\n君が真のたんごむだ！";
+  const current = letters.join("");
+  statusEl.textContent =
+    reactionLines[current] || "クリア！ 君が真のたんごむだ！";
+
   statusEl.classList.add("win");
   sparkleEl.classList.add("show");
   launchConfetti(confettiEl);
 }
+
 
 function shuffle() {
   if (cleared) return;
@@ -77,10 +82,11 @@ function shuffle() {
     letters.push(chanceLetters[chanceStep]);
     chanceStep++;
 
-    if (letters.join("") === target) {
-      winGame();
-      return;
-    }
+    
+if (letters.length === 7) {
+  winGame();
+  return;
+}
 
     render();
 
