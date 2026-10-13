@@ -37,6 +37,9 @@ const statusEl = document.getElementById("status");
 const countEl = document.getElementById("count");
 const sparkleEl = document.getElementById("sparkle");
 
+const shuffleButton = document.getElementById("shuffle");
+const resetButton = document.getElementById("reset");
+
 const debugButton = document.getElementById("debug");
 const debugEeteButton = document.getElementById("debugEete");
 const debugTangomuButton = document.getElementById("debugTangomu");
@@ -52,6 +55,28 @@ debugEeteButton.hidden = !DEBUG_MODE;
 debugTangomuButton.hidden = !DEBUG_MODE;
 
 // ========================================
+// ボタン表示の切り替え
+// ========================================
+
+function updateButtons() {
+  // クリアしたら「最初から」だけを表示
+  shuffleButton.hidden = cleared;
+  resetButton.hidden = !cleared;
+
+  // デバッグボタンは通常画面では表示しない
+  debugButton.hidden = true;
+  debugEeteButton.hidden = true;
+  debugTangomuButton.hidden = true;
+
+  // デバッグモードでは、クリア前だけデバッグボタンを表示
+  if (DEBUG_MODE && !cleared) {
+    debugButton.hidden = false;
+    debugEeteButton.hidden = false;
+    debugTangomuButton.hidden = false;
+  }
+}
+
+// ========================================
 // チャンス演出中のダブルタップズーム対策
 // ========================================
 
@@ -60,7 +85,6 @@ let lastChanceTouchEnd = 0;
 document.addEventListener(
   "touchend",
   (event) => {
-    // チャンス演出中以外は何もしない
     if (!document.body.classList.contains("chance-animation")) {
       lastChanceTouchEnd = 0;
       return;
@@ -68,7 +92,7 @@ document.addEventListener(
 
     const now = Date.now();
 
-    // チャンス演出中の連続タップによるズームを抑制
+    // 500ミリ秒以内の連続タップを抑制
     if (now - lastChanceTouchEnd < 500) {
       event.preventDefault();
     }
@@ -84,7 +108,6 @@ document.addEventListener(
 
 function showChanceAnnouncement() {
   animationLock = true;
-
   document.body.classList.add("chance-animation");
 
   gameButtons.forEach((button) => {
@@ -92,8 +115,6 @@ function showChanceAnnouncement() {
   });
 
   chanceOverlay.classList.remove("show");
-
-  // アニメーションを再スタート
   void chanceOverlay.offsetWidth;
 
   chanceOverlay.setAttribute("aria-hidden", "false");
@@ -156,17 +177,14 @@ function shuffledCopy() {
 function drawRareString() {
   const roll = Math.floor(Math.random() * 300000);
 
-  // 通常シークレット8種類：各1/10000
   if (roll < 240) {
     return rareStrings[Math.floor(roll / 30)];
   }
 
-  // eete：1/30000
   if (roll < 250) {
     return rareStrings[8];
   }
 
-  // たんごむ：1/100000
   if (roll < 253) {
     return rareStrings[9];
   }
@@ -233,6 +251,8 @@ function winGame() {
     sparkleEl.classList.remove("show");
     confettiEl.replaceChildren();
   }
+
+  updateButtons();
 }
 
 // ========================================
@@ -240,16 +260,12 @@ function winGame() {
 // ========================================
 
 function shuffle() {
-  // クリア後、またはチャンス演出中は処理しない
   if (cleared || animationLock) return;
 
   count++;
   countEl.textContent = count;
 
-  // ----------------------------------------
   // レア文字列の表示中
-  // ----------------------------------------
-
   if (rareStringMode) {
     letters.push(activeRareString.text[rareStringStep]);
     rareStringStep++;
@@ -268,10 +284,7 @@ function shuffle() {
     return;
   }
 
-  // ----------------------------------------
   // たんごむチャンス中
-  // ----------------------------------------
-
   if (chanceMode) {
     if (chanceStep >= 4) {
       chanceMode = false;
@@ -286,6 +299,7 @@ function shuffle() {
         winGame();
       } else {
         statusEl.textContent = "まだまだ！ もう一回シャッフル！";
+        updateButtons();
       }
 
       return;
@@ -294,7 +308,6 @@ function shuffle() {
     letters.push(chanceLetters[chanceStep]);
     chanceStep++;
 
-    // 7文字そろったら判定
     if (letters.length === 7) {
       winGame();
       return;
@@ -317,10 +330,7 @@ function shuffle() {
     return;
   }
 
-  // ----------------------------------------
   // レア文字列抽選
-  // ----------------------------------------
-
   const rareString = drawRareString();
 
   if (rareString !== null) {
@@ -341,17 +351,13 @@ function shuffle() {
     return;
   }
 
-  // ----------------------------------------
   // たんごむチャンス抽選
-  // ----------------------------------------
-
   if (Math.random() < CHANCE) {
     chanceMode = true;
     chanceStep = 0;
 
     chanceLetters = ["g", "o", "m", "u"];
 
-    // g,o,m,uの順番をランダムにする
     for (let i = chanceLetters.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [chanceLetters[i], chanceLetters[j]] = [
@@ -375,10 +381,7 @@ function shuffle() {
     return;
   }
 
-  // ----------------------------------------
   // 通常のシャッフル
-  // ----------------------------------------
-
   letters = shuffledCopy();
   cleared = letters.join("") === target;
 
@@ -392,6 +395,8 @@ function shuffle() {
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
     confettiEl.replaceChildren();
+
+    updateButtons();
   }
 }
 
@@ -437,6 +442,8 @@ function startDebugRareString(rareString) {
   statusEl.classList.remove("win");
   sparkleEl.classList.remove("show");
   confettiEl.replaceChildren();
+
+  updateButtons();
 }
 
 function debugEete() {
@@ -469,7 +476,6 @@ function reset() {
 
   letters = shuffledCopy();
 
-  // 初期状態で偶然クリアになった場合は再抽選
   if (letters.join("") === target) {
     letters = shuffledCopy();
   }
@@ -481,14 +487,16 @@ function reset() {
   statusEl.classList.remove("win");
   sparkleEl.classList.remove("show");
   confettiEl.replaceChildren();
+
+  updateButtons();
 }
 
 // ========================================
 // イベント登録
 // ========================================
 
-document.getElementById("shuffle").addEventListener("click", shuffle);
-document.getElementById("reset").addEventListener("click", reset);
+shuffleButton.addEventListener("click", shuffle);
+resetButton.addEventListener("click", reset);
 
 debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
