@@ -34,9 +34,14 @@ const statusEl = document.getElementById("status");
 const countEl = document.getElementById("count");
 const sparkleEl = document.getElementById("sparkle");
 const debugButton = document.getElementById("debug");
+const debugEeteButton = document.getElementById("debugEete");
+const debugTangomuButton = document.getElementById("debugTangomu");
 const confettiEl = document.getElementById("confetti");
 
+// デバッグボタンはデバッグモード中だけ表示
 debugButton.hidden = !DEBUG_MODE;
+debugEeteButton.hidden = !DEBUG_MODE;
+debugTangomuButton.hidden = !DEBUG_MODE;
 
 // targetの文字をランダムに並べ替える
 function shuffledCopy() {
@@ -97,7 +102,7 @@ function render() {
   });
 }
 
-// 7文字完成時の判定
+// クリア判定
 function winGame() {
   const current = letters.join("");
   const isBigWin = current === target;
@@ -131,13 +136,14 @@ function winGame() {
   }
 }
 
+// シャッフルボタンの処理
 function shuffle() {
   if (cleared) return;
 
   count++;
   countEl.textContent = count;
 
-  // シークレット発生中は、1文字ずつ追加する
+  // シークレット発生中は1文字ずつ追加
   if (rareStringMode) {
     letters.push(activeRareString.text[rareStringStep]);
     rareStringStep++;
@@ -209,7 +215,7 @@ function shuffle() {
     rareStringMode = true;
     activeRareString = rareString;
 
-    // 最初の1文字を表示する
+    // 最初の1文字を表示
     rareStringStep = 1;
     letters = [activeRareString.text[0]];
 
@@ -243,6 +249,7 @@ function shuffle() {
     statusEl.textContent = "たんごむチャンス！";
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
+    confettiEl.replaceChildren();
 
     return;
   }
@@ -281,6 +288,40 @@ function debugClear() {
   winGame();
 }
 
+// デバッグ用：シークレットの表示を開始
+function startDebugRareString(rareString) {
+  if (cleared) return;
+
+  rareStringMode = true;
+  activeRareString = rareString;
+  rareStringStep = 1;
+
+  chanceMode = false;
+  chanceStep = 0;
+
+  letters = [rareString.text[0]];
+
+  cleared = false;
+  render();
+
+  statusEl.textContent =
+    `デバッグ：${rareString.display} シークレット`;
+
+  statusEl.classList.remove("win");
+  sparkleEl.classList.remove("show");
+  confettiEl.replaceChildren();
+}
+
+// 紫色のeeteを確認
+function debugEete() {
+  startDebugRareString(rareStrings[8]);
+}
+
+// 金色のtangomuを確認
+function debugTangomu() {
+  startDebugRareString(rareStrings[9]);
+}
+
 // ゲームをリセット
 function reset() {
   count = 0;
@@ -309,8 +350,12 @@ function reset() {
   confettiEl.replaceChildren();
 }
 
+// ボタンのイベント登録
 document.getElementById("shuffle").addEventListener("click", shuffle);
 document.getElementById("reset").addEventListener("click", reset);
+
 debugButton.addEventListener("click", debugClear);
+debugEeteButton.addEventListener("click", debugEete);
+debugTangomuButton.addEventListener("click", debugTangomu);
 
 reset();
