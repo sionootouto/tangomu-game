@@ -1,4 +1,4 @@
-
+import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
