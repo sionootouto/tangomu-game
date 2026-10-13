@@ -389,3 +389,12 @@ button * {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* チャンス演出中：ボタンを灰色に見せる */
+.buttons button.chance-disabled-look {
+  background-color: #b8b8b8 !important;
+  color: #666 !important;
+  border-color: #aaa !important;
+  opacity: 0.75;
+  cursor: default;
+}
