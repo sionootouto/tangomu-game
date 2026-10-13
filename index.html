@@ -89,7 +89,7 @@
 <body>
   <main>
     <div class="eyebrow">MINI WORD GAME</div>
-    <h1>たんごむ1チャレンジ</h1>
+    <h1>たんごむ2チャレンジ</h1>
     <p>7文字をシャッフルして、<strong>tangomu</strong> を完成させよう！</p>
     <div class="letters" id="letters" aria-label="現在の文字列"></div>
     <div class="buttons">
@@ -179,67 +179,88 @@
   }
 
   function shuffle() {
-    if (cleared) return;
+  if (cleared) return;
 
-    count++;
-    countEl.textContent = count;
+  count++;
+  countEl.textContent = count;
 
-    // たんごむチャンス中は、押すたびに1文字追加
-    if (chanceMode) {
-      letters.push(chanceLetters[chanceStep]);
-      chanceStep++;
+  // たんごむチャンス中
+  if (chanceMode) {
+    // すでに7文字まで表示されていたら、通常モードに戻す
+    if (chanceStep >= 3) {
+      chanceMode = false;
+      chanceStep = 0;
 
-      if (letters.join("") === target) {
+      letters = shuffledCopy();
+      cleared = letters.join("") === target;
+      render();
+
+      if (cleared) {
         winGame();
-        return;
-      }
-
-      render();
-
-      if (chanceStep === 1) {
-        statusEl.textContent = "チャンス継続中！ 次の文字を出そう！";
       } else {
-        statusEl.textContent = "あと1文字！ もう一度押そう！";
+        statusEl.textContent = "まだまだ！ もう一回シャッフル！";
       }
       return;
     }
 
-    // 通常時：1/100の確率で「tang」チャンス発生
-    if (Math.random() < CHANCE) {
-      chanceMode = true;
-chanceStep = 0;
-chanceLetters = shuffledCopy().slice(0, 0); // この行は使わない
-chanceLetters = ["o", "m", "u"];
+    // 次の1文字を追加
+    letters.push(chanceLetters[chanceStep]);
+    chanceStep++;
 
-// 後ろ3文字をランダムに並べ替える
-for (let i = chanceLetters.length - 1; i > 0; i--) {
-  const j = Math.floor(Math.random() * (i + 1));
-  [chanceLetters[i], chanceLetters[j]] =
-    [chanceLetters[j], chanceLetters[i]];
-}
-
-letters = ["t", "a", "n", "g"];
-      render();
-
-      statusEl.textContent = "たんごむチャンス！";
-      statusEl.classList.remove("win");
-      sparkleEl.classList.remove("show");
+    if (letters.join("") === target) {
+      winGame();
       return;
     }
 
-    // チャンスが発生しなければ、7文字を一気にシャッフル
-    letters = shuffledCopy();
-    cleared = letters.join("") === target;
     render();
 
-    if (cleared) {
-      winGame();
+    if (chanceStep === 3) {
+      statusEl.textContent =
+        "今回はハズレ！ もう一度押して再挑戦！";
     } else {
-      statusEl.textContent = "まだまだ！ もう一回シャッフル！";
-      statusEl.classList.remove("win");
-      sparkleEl.classList.remove("show");
+      statusEl.textContent =
+        "チャンス継続中！ 次の文字を出そう！";
     }
+
+    return;
   }
+
+  // 通常モード：1/100の確率でチャンス発生
+  if (Math.random() < CHANCE) {
+    chanceMode = true;
+    chanceStep = 0;
+
+    chanceLetters = ["o", "m", "u"];
+
+    // 後ろ3文字をランダムに並べ替える
+    for (let i = chanceLetters.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [chanceLetters[i], chanceLetters[j]] =
+        [chanceLetters[j], chanceLetters[i]];
+    }
+
+    letters = ["t", "a", "n", "g"];
+    render();
+
+    statusEl.textContent = "たんごむチャンス！";
+    statusEl.classList.remove("win");
+    sparkleEl.classList.remove("show");
+    return;
+  }
+
+  // 通常のランダムシャッフル
+  letters = shuffledCopy();
+  cleared = letters.join("") === target;
+  render();
+
+  if (cleared) {
+    winGame();
+  } else {
+    statusEl.textContent = "まだまだ！ もう一回シャッフル！";
+    statusEl.classList.remove("win");
+    sparkleEl.classList.remove("show");
+  }
+}
 
   function debugClear() {
     if (cleared) return;
