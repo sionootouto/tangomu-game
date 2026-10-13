@@ -1,9 +1,7 @@
 
 import { launchConfetti } from "./effects.js";
 
-const target = "tangomu";
-const DEBUG_MODE = false;
-const CHANCE = 1 / 30;
+import { target, DEBUG_MODE, CHANCE } from "./config.js";
 
 let letters = [];
 let chanceLetters = [];
