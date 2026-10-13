@@ -69,7 +69,7 @@ document.addEventListener(
     const now = Date.now();
 
     // チャンス演出中の連続タップによるズームを抑制
-    if (now - lastChanceTouchEnd < 350) {
+    if (now - lastChanceTouchEnd < 500) {
       event.preventDefault();
     }
 
