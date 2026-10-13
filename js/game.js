@@ -92,8 +92,8 @@ document.addEventListener(
 
     const now = Date.now();
 
-    // 500ミリ秒以内の連続タップを抑制
-    if (now - lastChanceTouchEnd < 500) {
+    // チャンス演出中、短時間の連続タップによるズームを抑制
+    if (now - lastChanceTouchEnd < 700) {
       event.preventDefault();
     }
 
@@ -110,9 +110,8 @@ function showChanceAnnouncement() {
   animationLock = true;
   document.body.classList.add("chance-animation");
 
-  gameButtons.forEach((button) => {
-    button.disabled = true;
-  });
+  // ボタンは無効化しない
+  // animationLock によってゲームの処理だけを止める
 
   chanceOverlay.classList.remove("show");
   void chanceOverlay.offsetWidth;
@@ -125,10 +124,6 @@ function showChanceAnnouncement() {
     chanceOverlay.setAttribute("aria-hidden", "true");
 
     document.body.classList.remove("chance-animation");
-
-    gameButtons.forEach((button) => {
-      button.disabled = false;
-    });
 
     animationLock = false;
     chanceTimer = null;
@@ -146,10 +141,6 @@ function hideChanceAnnouncement() {
   chanceOverlay.setAttribute("aria-hidden", "true");
 
   document.body.classList.remove("chance-animation");
-
-  gameButtons.forEach((button) => {
-    button.disabled = false;
-  });
 
   animationLock = false;
   lastChanceTouchEnd = 0;
@@ -260,6 +251,7 @@ function winGame() {
 // ========================================
 
 function shuffle() {
+  // クリア後、または演出中はゲーム処理を実行しない
   if (cleared || animationLock) return;
 
   count++;
