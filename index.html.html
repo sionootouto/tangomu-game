@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>tangomuチャレンジ</title>
+  <style>
+    :root { color-scheme: light; --ink:#202338; --accent:#6c5ce7; --bg:#f5f4ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      padding: 24px; font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", sans-serif;
+      color: var(--ink); background: radial-gradient(circle at top, #e9e5ff, var(--bg) 58%);
+    }
+    main {
+      width: min(100%, 520px); text-align: center; background: #fff;
+      border: 1px solid #e9e7f6; border-radius: 28px; padding: 32px 22px;
+      box-shadow: 0 18px 55px #3a2e8014;
+    }
+    .eyebrow { color: var(--accent); font-weight: 800; letter-spacing: .16em; font-size: .8rem; }
+    h1 { margin: 8px 0 10px; font-size: clamp(2rem, 8vw, 3rem); letter-spacing: -.04em; }
+    p { line-height: 1.7; color: #66677a; margin: 0 auto; }
+    .letters {
+      display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;
+      margin: 28px 0 22px; min-height: 66px;
+    }
+    .letter {
+      width: clamp(38px, 10vw, 54px); height: clamp(46px, 12vw, 62px);
+      display: grid; place-items: center; border-radius: 14px;
+      background: #f0edff; color: #4938b4; font-size: clamp(1.35rem, 5vw, 1.8rem);
+      font-weight: 850; box-shadow: inset 0 -3px #dcd5ff;
+    }
+    .letter.correct { background: #d9f8e7; color: #167747; box-shadow: inset 0 -3px #b5e9cc; }
+    .buttons { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    button {
+      border: 0; border-radius: 14px; padding: 13px 20px; font: inherit;
+      font-weight: 750; cursor: pointer; transition: transform .12s, filter .12s;
+    }
+    button:hover { filter: brightness(.97); transform: translateY(-1px); }
+    button:active { transform: translateY(1px); }
+    .primary { background: var(--accent); color: white; }
+    .secondary { background: #f0eff7; color: #45445b; }
+    #status { min-height: 2em; margin-top: 20px; font-weight: 750; color: #5c5b70; }
+    #status.win { color: #16804a; font-size: 1.15rem; }
+    .count { margin-top: 8px; font-size: .9rem; color: #9291a4; }
+    .sparkle { display: none; font-size: 1.7rem; margin-top: 8px; }
+    .sparkle.show { display: block; animation: pop .45s ease-out; }
+    @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">MINI WORD GAME</div>
+    <h1>tangomu チャレンジ</h1>
+    <p>7文字をシャッフルして、<strong>tangomu</strong> を完成させよう！</p>
+    <div class="letters" id="letters" aria-label="現在の文字列"></div>
+    <div class="buttons">
+      <button class="primary" id="shuffle">シャッフル！</button>
+      <button class="secondary" id="reset">最初から</button>
+    </div>
+    <div id="status" role="status" aria-live="polite">「シャッフル！」を押して挑戦しよう。</div>
+    <div id="sparkle" class="sparkle" aria-hidden="true">🎉 ✨ 🎉</div>
+    <div class="count">シャッフル回数：<span id="count">0</span></div>
+  </main>
+  <script>
+    const target = "tangomu";
+    let letters = [];
+    let count = 0;
+    let cleared = false;
+    const lettersEl = document.getElementById("letters");
+    const statusEl = document.getElementById("status");
+    const countEl = document.getElementById("count");
+    const sparkleEl = document.getElementById("sparkle");
+
+    function shuffledCopy() {
+      const arr = target.split("");
+      // Fisher–Yates shuffle
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+    function render() {
+      lettersEl.replaceChildren();
+      letters.forEach((letter, index) => {
+        const tile = document.createElement("span");
+        tile.className = "letter" + (cleared ? " correct" : "");
+        tile.textContent = letter;
+        tile.setAttribute("aria-label", `${index + 1}文字目 ${letter}`);
+        lettersEl.appendChild(tile);
+      });
+    }
+    function shuffle() {
+      if (cleared) return;
+      count++;
+      countEl.textContent = count;
+      letters = shuffledCopy();
+      // If the random result happens to be the answer, that's a win!
+      cleared = letters.join("") === target;
+      render();
+      if (cleared) {
+        statusEl.textContent = `クリア！！ ${count}回目で tangomu 完成！`;
+        statusEl.classList.add("win");
+        sparkleEl.classList.add("show");
+      } else {
+        statusEl.textContent = "まだまだ！ もう一回シャッフル！";
+      }
+    }
+    function reset() {
+      count = 0;
+      cleared = false;
+      countEl.textContent = "0";
+      letters = shuffledCopy();
+      if (letters.join("") === target) letters = shuffledCopy();
+      render();
+      statusEl.textContent = "「シャッフル！」を押して挑戦しよう。";
+      statusEl.classList.remove("win");
+      sparkleEl.classList.remove("show");
+    }
+    document.getElementById("shuffle").addEventListener("click", shuffle);
+    document.getElementById("reset").addEventListener("click", reset);
+    reset();
+  </script>
+</body>
+</html>
