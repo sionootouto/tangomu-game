@@ -110,8 +110,10 @@ function showChanceAnnouncement() {
   animationLock = true;
   document.body.classList.add("chance-animation");
 
-  // ボタンは無効化しない
-  // animationLock によってゲームの処理だけを止める
+  // ボタンは灰色に見せるが、disabledにはしない
+  gameButtons.forEach((button) => {
+    button.classList.add("chance-disabled-look");
+  });
 
   chanceOverlay.classList.remove("show");
   void chanceOverlay.offsetWidth;
@@ -124,6 +126,10 @@ function showChanceAnnouncement() {
     chanceOverlay.setAttribute("aria-hidden", "true");
 
     document.body.classList.remove("chance-animation");
+
+    gameButtons.forEach((button) => {
+      button.classList.remove("chance-disabled-look");
+    });
 
     animationLock = false;
     chanceTimer = null;
@@ -141,6 +147,10 @@ function hideChanceAnnouncement() {
   chanceOverlay.setAttribute("aria-hidden", "true");
 
   document.body.classList.remove("chance-animation");
+
+  gameButtons.forEach((button) => {
+    button.classList.remove("chance-disabled-look");
+  });
 
   animationLock = false;
   lastChanceTouchEnd = 0;
