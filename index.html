@@ -102,120 +102,168 @@
     <div id="confetti" aria-hidden="true"></div>
     <div class="count">シャッフル回数：<span id="count">0</span></div>
   </main>
-  <script>
-    const target = "tangomu";
-    const DEBUG_MODE = false;
-    let letters = [];
-    let count = 0;
-    let cleared = false;
-    const lettersEl = document.getElementById("letters");
-    const statusEl = document.getElementById("status");
-    const countEl = document.getElementById("count");
-    const sparkleEl = document.getElementById("sparkle");
+<script>
+  const target = "tangomu";
+  const DEBUG_MODE = false;
+  const CHANCE = 1 / 100;
 
-    function shuffledCopy() {
-      const arr = target.split("");
-      // Fisher–Yates shuffle
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
+  let letters = [];
+  let count = 0;
+  let cleared = false;
+  let chanceMode = false;
+  let chanceStep = 0;
+
+  const lettersEl = document.getElementById("letters");
+  const statusEl = document.getElementById("status");
+  const countEl = document.getElementById("count");
+  const sparkleEl = document.getElementById("sparkle");
+  const debugButton = document.getElementById("debug");
+  const confettiEl = document.getElementById("confetti");
+
+  debugButton.hidden = !DEBUG_MODE;
+
+  function shuffledCopy() {
+    const arr = target.split("");
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
     }
-    function render() {
-      lettersEl.replaceChildren();
-      letters.forEach((letter, index) => {
-        const tile = document.createElement("span");
-        tile.className = "letter" + (cleared ? " correct" : "");
-        tile.textContent = letter;
-        tile.setAttribute("aria-label", `${index + 1}文字目 ${letter}`);
-        lettersEl.appendChild(tile);
-      });
-    }
-    
-function launchConfetti() {
-  const container = document.getElementById("confetti");
-  const colors = [
-    "#ff4d6d",
-    "#ffd166",
-    "#06d6a0",
-    "#4dabf7",
-    "#9b5de5",
-    "#ff85c1"
-  ];
-
-  container.replaceChildren();
-
-  for (let i = 0; i < 100; i++) {
-    const piece = document.createElement("span");
-    piece.className = "confetti-piece";
-    piece.style.left = Math.random() * 100 + "%";
-    piece.style.backgroundColor =
-      colors[Math.floor(Math.random() * colors.length)];
-    piece.style.animationDelay = Math.random() * 1.5 + "s";
-    piece.style.animationDuration =
-      (2.5 + Math.random() * 2) + "s";
-    piece.style.transform =
-      `rotate(${Math.random() * 360}deg)`;
-
-    container.appendChild(piece);
+    return arr;
   }
-}
-function debugClear() {
-  letters = ["t", "a", "n", "g", "o", "m", "u"];
-  count++;
-  countEl.textContent = count;
-  cleared = true;
 
-  render();
+  // 通常時のシャッフル。偶然の正解も含めて判定する
+  function render() {
+    lettersEl.replaceChildren();
 
-  statusEl.textContent = "クリア！\n君が真のたんごむだ！";
-  statusEl.classList.add("win");
-  sparkleEl.classList.add("show");
+    letters.forEach((letter, index) => {
+      const tile = document.createElement("span");
+      tile.className = "letter" + (cleared ? " correct" : "");
+      tile.textContent = letter;
+      tile.setAttribute("aria-label", `${index + 1}文字目 ${letter}`);
+      lettersEl.appendChild(tile);
+    });
+  }
 
-  launchConfetti();
-}
+  function launchConfetti() {
+    const colors = [
+      "#ff4d6d", "#ffd166", "#06d6a0",
+      "#4dabf7", "#9b5de5", "#ff85c1"
+    ];
 
-    function shuffle() {
-      if (cleared) return;
-      count++;
-      countEl.textContent = count;
-      letters = shuffledCopy();
-      // If the random result happens to be the answer, that's a win!
-      cleared = letters.join("") === target;
-      render();
-      
-if (cleared) {
-  statusEl.textContent = "クリア！\n君が真のたんごむだ！";
-  statusEl.classList.add("win");
-  sparkleEl.classList.add("show");
-  launchConfetti();
-} else {
+    confettiEl.replaceChildren();
 
-        statusEl.textContent = "まだまだ！ もう一回シャッフル！";
-      }
+    for (let i = 0; i < 100; i++) {
+      const piece = document.createElement("span");
+      piece.className = "confetti-piece";
+      piece.style.left = Math.random() * 100 + "%";
+      piece.style.backgroundColor =
+        colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = Math.random() * 1.5 + "s";
+      piece.style.animationDuration =
+        (2.5 + Math.random() * 2) + "s";
+      piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+      confettiEl.appendChild(piece);
     }
-    function reset() {
-      count = 0;
-      cleared = false;
-      countEl.textContent = "0";
-      letters = shuffledCopy();
-      if (letters.join("") === target) letters = shuffledCopy();
+  }
+
+  function winGame() {
+    cleared = true;
+    chanceMode = false;
+    render();
+
+    statusEl.textContent = "クリア！\n君が真のたんごむだ！";
+    statusEl.classList.add("win");
+    sparkleEl.classList.add("show");
+    launchConfetti();
+  }
+
+  function shuffle() {
+    if (cleared) return;
+
+    count++;
+    countEl.textContent = count;
+
+    // たんごむチャンス中は、押すたびに1文字追加
+    if (chanceMode) {
+      const nextLetters = ["o", "m", "u"];
+      letters.push(nextLetters[chanceStep]);
+      chanceStep++;
+
+      if (letters.join("") === target) {
+        winGame();
+        return;
+      }
+
       render();
-      statusEl.textContent = "「シャッフル！」を押して挑戦しよう。";
+
+      if (chanceStep === 1) {
+        statusEl.textContent = "チャンス継続中！ 次の文字を出そう！";
+      } else {
+        statusEl.textContent = "あと1文字！ もう一度押そう！";
+      }
+      return;
+    }
+
+    // 通常時：1/100の確率で「tang」チャンス発生
+    if (Math.random() < CHANCE) {
+      chanceMode = true;
+      chanceStep = 0;
+      letters = ["t", "a", "n", "g"];
+      render();
+
+      statusEl.textContent = "たんごむチャンス！";
       statusEl.classList.remove("win");
       sparkleEl.classList.remove("show");
-      document.getElementById("confetti").replaceChildren();
+      return;
     }
-    document.getElementById("shuffle").addEventListener("click", shuffle);
-    document.getElementById("debug").addEventListener("click", debugClear);
-    
-const debugButton = document.getElementById("debug");
 
-debugButton.hidden = !DEBUG_MODE;
+    // チャンスが発生しなければ、7文字を一気にシャッフル
+    letters = shuffledCopy();
+    cleared = letters.join("") === target;
+    render();
 
-    document.getElementById("reset").addEventListener("click", reset);
-    reset();
-  </script>
+    if (cleared) {
+      winGame();
+    } else {
+      statusEl.textContent = "まだまだ！ もう一回シャッフル！";
+      statusEl.classList.remove("win");
+      sparkleEl.classList.remove("show");
+    }
+  }
+
+  function debugClear() {
+    if (cleared) return;
+
+    count++;
+    countEl.textContent = count;
+    letters = target.split("");
+    winGame();
+  }
+
+  function reset() {
+    count = 0;
+    cleared = false;
+    chanceMode = false;
+    chanceStep = 0;
+    countEl.textContent = "0";
+
+    letters = shuffledCopy();
+    if (letters.join("") === target) {
+      letters = shuffledCopy();
+    }
+
+    render();
+    statusEl.textContent = "「シャッフル！」を押して挑戦しよう。";
+    statusEl.classList.remove("win");
+    sparkleEl.classList.remove("show");
+    confettiEl.replaceChildren();
+  }
+
+  document.getElementById("shuffle").addEventListener("click", shuffle);
+  document.getElementById("reset").addEventListener("click", reset);
+  debugButton.addEventListener("click", debugClear);
+
+  reset();
+</script>
 </body>
 </html>
