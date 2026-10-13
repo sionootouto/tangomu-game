@@ -307,3 +307,16 @@ button:disabled {
     transition: none !important;
   }
 }
+
+/* たんごむチャンス演出中の連続タップズームを防ぐ */
+body.chance-animation,
+body.chance-animation * {
+  touch-action: none !important;
+  -webkit-user-select: none !important;
+  user-select: none !important;
+  -webkit-touch-callout: none !important;
+}
+
+body.chance-animation {
+  overscroll-behavior: none;
+}
