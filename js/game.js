@@ -42,19 +42,26 @@ function render() {
 
 
 function winGame() {
+  const current = letters.join("");
+  const isBigWin = current === target;
+
   cleared = true;
   chanceMode = false;
   render();
 
-  const current = letters.join("");
   statusEl.textContent =
-    reactionLines[current] || "クリア！ 君が真のたんごむだ！";
+    reactionLines[current] || "......";
 
-  statusEl.classList.add("win");
-  sparkleEl.classList.add("show");
-  launchConfetti(confettiEl);
+  if (isBigWin) {
+    statusEl.classList.add("win");
+    sparkleEl.classList.add("show");
+    launchConfetti(confettiEl);
+  } else {
+    statusEl.classList.remove("win");
+    sparkleEl.classList.remove("show");
+    confettiEl.replaceChildren();
+  }
 }
-
 
 function shuffle() {
   if (cleared) return;
