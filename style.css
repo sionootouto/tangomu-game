@@ -9,7 +9,7 @@
   box-sizing: border-box;
 }
 
-/* ボタン連打時のズームや選択を防ぐ */
+/* ボタンの連打・選択対策 */
 button {
   touch-action: manipulation;
   -webkit-user-select: none;
@@ -87,7 +87,7 @@ p {
   box-shadow: inset 0 -3px #b5e9cc;
 }
 
-/* ボタン */
+/* ボタン配置 */
 .buttons {
   display: flex;
   justify-content: center;
@@ -95,6 +95,7 @@ p {
   flex-wrap: wrap;
 }
 
+/* 共通ボタン */
 button {
   border: 0;
   border-radius: 14px;
@@ -118,6 +119,21 @@ button:disabled {
   cursor: default;
   opacity: .7;
   transform: none;
+}
+
+button[hidden] {
+  display: none !important;
+}
+
+/* メインのシャッフルボタン */
+#shuffle {
+  width: 100%;
+  min-height: 64px;
+  padding: 18px 24px;
+  border-radius: 18px;
+  font-size: 1.35rem;
+  font-weight: 850;
+  letter-spacing: .04em;
 }
 
 .primary {
@@ -145,6 +161,16 @@ button:disabled {
   font-size: 1.5rem;
   line-height: 1.8;
   animation: pop .5s ease-out;
+}
+
+/* クリア後の最初からボタン */
+#reset {
+  width: 100%;
+  min-height: 64px;
+  padding: 18px 24px;
+  border-radius: 18px;
+  font-size: 1.25rem;
+  font-weight: 850;
 }
 
 .count {
@@ -318,9 +344,28 @@ body.chance-animation * {
   -webkit-touch-callout: none !important;
 }
 
-/* チャンス演出中もボタンのタップ操作を維持 */
 body.chance-animation button {
   touch-action: manipulation;
+}
+
+/* スマートフォン向け */
+@media (max-width: 480px) {
+  body {
+    padding: 14px;
+  }
+
+  main {
+    padding: 28px 18px;
+  }
+
+  .letters {
+    gap: 3px;
+  }
+
+  #shuffle,
+  #reset {
+    min-height: 62px;
+  }
 }
 
 /* 動きを減らす設定が有効な端末への配慮 */
@@ -331,13 +376,4 @@ body.chance-animation button {
     animation: none !important;
     transition: none !important;
   }
-}
-
-/* チャンス演出中のダブルタップズーム対策 */
-body.chance-animation {
-  touch-action: manipulation;
-}
-
-body.chance-animation button {
-  touch-action: manipulation;
 }
