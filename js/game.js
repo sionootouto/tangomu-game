@@ -1,10 +1,43 @@
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
+import { loadSave, saveGame } from "./save.js";
 
 let letters = [];
 let chanceLetters = [];
 let count = 0;
+// 保存済みの記録
+let saveData = loadSave();
+
+// デバッグで開始したシークレットかどうか
+let activeRareStringIsDebug = false;
+
+// 記録を保存する
+function persistSave() {
+  saveGame(saveData);
+}
+
+// シャッフル回数を記録
+function recordShuffle() {
+  saveData.totalShuffles++;
+  persistSave();
+}
+
+// クリア回数を記録
+function recordClear() {
+  saveData.totalClears++;
+  persistSave();
+}
+
+// 発見したシークレットを記録
+function recordSecret(secretText) {
+  if (saveData.discoveredSecrets.includes(secretText)) {
+    return;
+  }
+
+  saveData.discoveredSecrets.push(secretText);
+  persistSave();
+}
 
 const rareStrings = [
   { text: "itta", display: "いった", number: 1, color: "normal" },
