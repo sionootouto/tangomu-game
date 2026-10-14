@@ -1,3 +1,4 @@
+
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
@@ -7,27 +8,99 @@ import { checkAchievements } from "./achievements.js";
 let letters = [];
 let chanceLetters = [];
 let count = 0;
+
 // 保存済みの記録
 let saveData = loadSave();
 
 // デバッグで開始したシークレットかどうか
 let activeRareStringIsDebug = false;
 
+// ========================================
+// セーブ・実績機能
+// ========================================
+
 // 記録を保存する
 function persistSave() {
   saveGame(saveData);
+}
+
+// 実績解除通知の表示要素
+const achievementToast = document.createElement("div");
+
+Object.assign(achievementToast.style, {
+  position: "fixed",
+  top: "20px",
+  left: "50%",
+  transform: "translateX(-50%)",
+  zIndex: "10000",
+  padding: "12px 20px",
+  background: "#292929",
+  color: "#ffffff",
+  border: "2px solid #f5c542",
+  borderRadius: "12px",
+  fontWeight: "bold",
+  textAlign: "center",
+  whiteSpace: "pre-line",
+  opacity: "0",
+  transition: "opacity 0.25s",
+  pointerEvents: "none",
+  maxWidth: "90%",
+  width: "max-content",
+  boxSizing: "border-box"
+});
+
+document.body.appendChild(achievementToast);
+
+let achievementToastTimer = null;
+
+// 実績解除の通知を表示する
+function showAchievementToast(newlyUnlocked) {
+  if (newlyUnlocked.length === 0) {
+    return;
+  }
+
+  achievementToast.textContent =
+    "🏆 実績解除！\n" +
+    newlyUnlocked
+      .map((achievement) => achievement.name)
+      .join("\n");
+
+  achievementToast.style.opacity = "1";
+
+  if (achievementToastTimer !== null) {
+    clearTimeout(achievementToastTimer);
+  }
+
+  achievementToastTimer = setTimeout(() => {
+    achievementToast.style.opacity = "0";
+    achievementToastTimer = null;
+  }, 2500);
+}
+
+// 条件を満たした実績を解除して保存する
+function updateAchievements() {
+  const newlyUnlocked = checkAchievements(saveData);
+
+  if (newlyUnlocked.length === 0) {
+    return;
+  }
+
+  persistSave();
+  showAchievementToast(newlyUnlocked);
 }
 
 // シャッフル回数を記録
 function recordShuffle() {
   saveData.totalShuffles++;
   persistSave();
+  updateAchievements();
 }
 
 // クリア回数を記録
 function recordClear() {
   saveData.totalClears++;
   persistSave();
+  updateAchievements();
 }
 
 // 発見したシークレットを記録
@@ -38,7 +111,12 @@ function recordSecret(secretText) {
 
   saveData.discoveredSecrets.push(secretText);
   persistSave();
+  updateAchievements();
 }
+
+// ========================================
+// シークレット一覧
+// ========================================
 
 const rareStrings = [
   { text: "itta", display: "いった", number: 1, color: "normal" },
@@ -66,7 +144,10 @@ let animationLock = false;
 let chanceTimer = null;
 let secretTimer = null;
 
+// ========================================
 // HTML要素
+// ========================================
+
 const lettersEl = document.getElementById("letters");
 const statusEl = document.getElementById("status");
 const countEl = document.getElementById("count");
@@ -93,7 +174,6 @@ debugTangomuButton.hidden = !DEBUG_MODE;
 // ボタン表示の切り替え
 // ========================================
 
-
 function updateButtons() {
   // ゲーム中はシャッフル、クリア後は最初から
   shuffleButton.hidden = cleared;
@@ -111,7 +191,6 @@ function updateButtons() {
     debugTangomuButton.hidden = false;
   }
 }
-
 
 // ========================================
 // チャンス演出中のダブルタップズーム対策
@@ -146,7 +225,6 @@ function showChanceAnnouncement() {
   animationLock = true;
   document.body.classList.add("chance-animation");
 
-  // 既存の見た目の処理はそのまま維持
   gameButtons.forEach((button) => {
     button.classList.add("chance-disabled-look");
   });
@@ -197,14 +275,12 @@ function hideChanceAnnouncement() {
 // ========================================
 
 function startSecretPause() {
-  // 直前の停止タイマーがあれば解除
   if (secretTimer !== null) {
     clearTimeout(secretTimer);
   }
 
   animationLock = true;
 
-  // 1秒後に操作を再開
   secretTimer = setTimeout(() => {
     secretTimer = null;
     animationLock = false;
@@ -218,7 +294,6 @@ function startSecretPause() {
 function shuffledCopy() {
   const array = ["t", "a", "n", "g", "o", "m", "u"];
 
-  // target（tangomu）が揃った場合はシャッフルし直す
   let result;
 
   do {
@@ -288,9 +363,11 @@ function winGame(isDebug = false) {
   const isBigWin = current === target;
 
   if (isBigWin) {
+    // デバッグクリアは実績対象外
     if (!isDebug) {
-  recordClear();
-}
+      recordClear();
+    }
+
     cleared = true;
     chanceMode = false;
     chanceStep = 0;
@@ -331,7 +408,7 @@ function shuffle() {
   count++;
   countEl.textContent = count;
 
-  // 累計シャッフル回数を保存
+  // 累計シャッフル回数を保存し、実績を判定
   recordShuffle();
 
   // レア文字列の表示中
@@ -344,11 +421,12 @@ function shuffle() {
     // シークレットが完成したか判定
     if (rareStringStep >= activeRareString.text.length) {
       // デバッグ以外で完成したシークレットを記録
-if (!activeRareStringIsDebug) {
-  recordSecret(activeRareString.text);
-}
+      if (!activeRareStringIsDebug) {
+        recordSecret(activeRareString.text);
+      }
 
-activeRareStringIsDebug = false;
+      activeRareStringIsDebug = false;
+
       statusEl.textContent =
         `${activeRareString.display} シークレット${activeRareString.number}/10`;
 
@@ -356,7 +434,6 @@ activeRareStringIsDebug = false;
       activeRareString = null;
       rareStringStep = 0;
 
-      // 完成後は停止しない
       return;
     }
 
@@ -425,7 +502,6 @@ activeRareStringIsDebug = false;
 
     render();
 
-    // 1文字目が出た瞬間から1秒間停止
     startSecretPause();
 
     statusEl.textContent = "おっと...？";
@@ -499,6 +575,7 @@ function debugClear() {
   rareStringMode = false;
   activeRareString = null;
   rareStringStep = 0;
+  activeRareStringIsDebug = false;
 
   chanceMode = false;
   chanceStep = 0;
@@ -509,8 +586,10 @@ function debugClear() {
 }
 
 function startDebugRareString(rareString) {
-  activeRareStringIsDebug = true;
+  // 操作できないときは何も変更しない
   if (cleared || animationLock) return;
+
+  activeRareStringIsDebug = true;
 
   rareStringMode = true;
   activeRareString = rareString;
@@ -524,7 +603,6 @@ function startDebugRareString(rareString) {
 
   render();
 
-  // デバッグ時も1文字目から1秒間停止
   startSecretPause();
 
   statusEl.textContent = `デバッグ：${rareString.display} シークレット`;
@@ -552,7 +630,6 @@ function reset() {
   activeRareStringIsDebug = false;
   hideChanceAnnouncement();
 
-  // シークレット停止中にリセットした場合も解除
   if (secretTimer !== null) {
     clearTimeout(secretTimer);
     secretTimer = null;
@@ -601,5 +678,11 @@ debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
 debugTangomuButton.addEventListener("click", debugTangomu);
 
+// ========================================
 // 初期化
+// ========================================
+
 reset();
+
+// 以前のセーブデータも含めて、起動時に実績条件を再確認
+updateAchievements();
