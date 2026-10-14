@@ -7,32 +7,60 @@ const soundFiles = {
   chanceMiss: "../sounds/chance-miss.mp3"
 };
 
-const sounds = {};
+const AudioContextClass =
+  window.AudioContext || window.webkitAudioContext;
 
-for (const [name, path] of Object.entries(soundFiles)) {
-  const audio = new Audio(new URL(path, import.meta.url));
-  audio.preload = "auto";
-  sounds[name] = audio;
+const audioContext = new AudioContextClass();
+const audioBuffers = {};
+
+let loadingPromise = null;
+
+// 音声を先に読み込んでおく
+function loadSounds() {
+  if (loadingPromise) return loadingPromise;
+
+  loadingPromise = Promise.all(
+    Object.entries(soundFiles).map(async ([name, path]) => {
+      const response = await fetch(new URL(path, import.meta.url));
+
+      if (!response.ok) {
+        throw new Error(`音声を読み込めません: ${path}`);
+      }
+
+      const data = await response.arrayBuffer();
+      audioBuffers[name] = await audioContext.decodeAudioData(data);
+    })
+  ).catch((error) => {
+    loadingPromise = null;
+    console.error("効果音の読み込みに失敗しました", error);
+    throw error;
+  });
+
+  return loadingPromise;
 }
 
+// ページを開いたら、音声の読み込みを開始
+loadSounds().catch(() => {});
 
+// 効果音を再生
 export function playSE(name) {
-  const audio = sounds[name];
+  const buffer = audioBuffers[name];
 
-  if (!audio) {
-    console.warn(`効果音が見つかりません: ${name}`);
+  if (!buffer) {
+    console.warn(`効果音の読み込み中です: ${name}`);
     return;
   }
 
-  // 特別な効果音が鳴るときはボタン音を止める
-  if (name !== "button" && sounds.button) {
-    sounds.button.pause();
-    sounds.button.currentTime = 0;
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
   }
 
-  audio.currentTime = 0;
+  const source = audioContext.createBufferSource();
+  const gain = audioContext.createGain();
 
-  audio.play().catch((error) => {
-    console.warn(`効果音を再生できませんでした: ${name}`, error);
-  });
+  source.buffer = buffer;
+  source.connect(gain);
+  gain.connect(audioContext.destination);
+
+  source.start(0);
 }
