@@ -658,16 +658,18 @@ document.addEventListener(
   (event) => {
     const button = event.target.closest?.("button");
 
-    if (button) {
-      // 操作禁止中なら、ボタンのクリック自体を止める
-      if (animationLock) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
-      }
 
-      playSE("button");
-    }
+if (button) {
+  // 演出中など、操作禁止中は効果音も鳴らさない
+  if (animationLock || button.disabled) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
+  }
+
+  playSE("button");
+}
+
   },
   true
 );
