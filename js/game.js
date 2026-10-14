@@ -272,6 +272,7 @@ function startDopaChance() {
 
 function endDopaChance() {
   dopaChanceActive = false;
+  document.body.classList.remove("dopa-rainbow");
 
   if (dopaChanceInterval !== null) {
     clearInterval(dopaChanceInterval);
