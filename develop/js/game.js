@@ -130,7 +130,7 @@ function showDopaEntrance() {
   `;
 
   document.body.appendChild(overlay);
-  playSE("clear");
+  playSE("dopaEnter");
 
   requestAnimationFrame(() => {
     overlay.classList.add("active");
