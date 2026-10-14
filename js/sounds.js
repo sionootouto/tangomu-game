@@ -71,40 +71,40 @@ export function playSE(name) {
 }
 
 // DOPA CHANCE中のBGMをループ再生
-export function startDopaBGM() {
-  const buffer = audioBuffers.dopaBgm;
 
-  if (!buffer) {
-    console.warn("DOPA CHANCEのBGMがまだ読み込まれていません");
-    return;
+export async function startDopaBGM() {
+  try {
+    await loadSounds();
+
+    const buffer = audioBuffers.dopaBgm;
+
+    if (!buffer || dopaBgmSource) return;
+
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
+    }
+
+    dopaBgmSource = audioContext.createBufferSource();
+    dopaBgmGain = audioContext.createGain();
+
+    dopaBgmSource.buffer = buffer;
+    dopaBgmSource.loop = true;
+    dopaBgmGain.gain.value = 0.65;
+
+    dopaBgmSource.connect(dopaBgmGain);
+    dopaBgmGain.connect(audioContext.destination);
+
+    dopaBgmSource.onended = () => {
+      dopaBgmSource = null;
+      dopaBgmGain = null;
+    };
+
+    dopaBgmSource.start(0);
+  } catch (error) {
+    console.error("DOPA CHANCEのBGMを再生できませんでした", error);
   }
-
-  // 二重再生を防ぐ
-  if (dopaBgmSource) return;
-
-  if (audioContext.state === "suspended") {
-    audioContext.resume();
-  }
-
-  dopaBgmSource = audioContext.createBufferSource();
-  dopaBgmGain = audioContext.createGain();
-
-  dopaBgmSource.buffer = buffer;
-  dopaBgmSource.loop = true;
-
-  // BGMの音量（0.0〜1.0）
-  dopaBgmGain.gain.value = 0.65;
-
-  dopaBgmSource.connect(dopaBgmGain);
-  dopaBgmGain.connect(audioContext.destination);
-
-  dopaBgmSource.onended = () => {
-    dopaBgmSource = null;
-    dopaBgmGain = null;
-  };
-
-  dopaBgmSource.start(0);
 }
+
 
 // DOPA CHANCEのBGMだけを停止
 export function stopDopaBGM() {
