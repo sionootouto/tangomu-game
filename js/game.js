@@ -15,10 +15,7 @@ let letters = [];
 let chanceLetters = [];
 let count = 0;
 
-// 保存済みの記録
 let saveData = loadSave();
-
-// デバッグで開始したシークレットかどうか
 let activeRareStringIsDebug = false;
 
 // ========================================
@@ -91,8 +88,6 @@ let chanceStep = 0;
 let animationLock = false;
 let chanceTimer = null;
 let secretTimer = null;
-
-// ★ 操作ロック解除タイマーを追加
 let animationLockTimer = null;
 
 // ========================================
@@ -205,6 +200,21 @@ debugEeteButton.hidden = !DEBUG_MODE;
 debugTangomuButton.hidden = !DEBUG_MODE;
 
 // ========================================
+// ボタン状態の更新
+// ========================================
+
+function updateButtons() {
+  // アニメーション中だけ操作を禁止する。
+  // cleared が true でもシャッフルは押せるようにする。
+  shuffleButton.disabled = animationLock;
+  resetButton.disabled = false;
+
+  debugButton.disabled = animationLock;
+  debugEeteButton.disabled = animationLock;
+  debugTangomuButton.disabled = animationLock;
+}
+
+// ========================================
 // チャンス演出中のダブルタップズーム対策
 // ========================================
 
@@ -235,6 +245,8 @@ document.addEventListener(
 
 function showChanceAnnouncement() {
   animationLock = true;
+  updateButtons();
+
   document.body.classList.add("chance-animation");
 
   gameButtons.forEach((button) => {
@@ -246,6 +258,10 @@ function showChanceAnnouncement() {
 
   chanceOverlay.setAttribute("aria-hidden", "false");
   chanceOverlay.classList.add("show");
+
+  if (chanceTimer !== null) {
+    clearTimeout(chanceTimer);
+  }
 
   chanceTimer = setTimeout(() => {
     chanceOverlay.classList.remove("show");
@@ -260,6 +276,8 @@ function showChanceAnnouncement() {
     animationLock = false;
     chanceTimer = null;
     lastChanceTouchEnd = 0;
+
+    updateButtons();
   }, 500);
 }
 
@@ -280,6 +298,8 @@ function hideChanceAnnouncement() {
 
   animationLock = false;
   lastChanceTouchEnd = 0;
+
+  updateButtons();
 }
 
 // ========================================
@@ -437,7 +457,14 @@ function winGame(isDebug = false) {
 // ========================================
 
 function shuffle() {
-  if (cleared || animationLock) return;
+  // 演出中は操作を受け付けない
+  if (animationLock) return;
+
+  // ★ 修正：クリア後にシャッフルを押したら次のゲームへ
+  if (cleared) {
+    reset();
+    return;
+  }
 
   count++;
   countEl.textContent = count;
@@ -504,26 +531,30 @@ function shuffle() {
     letters.push(chanceLetters[chanceStep]);
     chanceStep++;
 
-    // ★ 修正箇所：7文字出切ったとき
+    // 7文字完成時の処理
     if (letters.length === 7) {
       const isBigWin = letters.join("") === target;
 
-      // まず操作をロックする
-      animationLock = true;
-
-      // 既存の解除タイマーがあれば解除する
+      // 古い解除タイマーがあれば解除
       if (animationLockTimer !== null) {
         clearTimeout(animationLockTimer);
         animationLockTimer = null;
       }
 
-      // winGame()より先に解除タイマーを設定する
+      // 先にロックを設定する
+      animationLock = true;
+      updateButtons();
+
+      // クリア時は少し長めに演出を見せる
       animationLockTimer = setTimeout(() => {
         animationLock = false;
         animationLockTimer = null;
+
+        // ★ ロック解除後にボタンを再び有効にする
+        updateButtons();
       }, isBigWin ? 1000 : 500);
 
-      // そのあとに成功・失敗の演出を実行
+      // 7文字が完成した結果を判定する
       winGame();
 
       return;
@@ -538,7 +569,8 @@ function shuffle() {
       current === "tango" ||
       current === "tangom"
     ) {
-      statusEl.textContent = "チャンス継続中！ 次の文字を出そう！";
+      statusEl.textContent =
+        "チャンス継続中！ 次の文字を出そう！";
     } else {
       statusEl.textContent = "...";
     }
@@ -708,10 +740,13 @@ function startSecretPause() {
   }
 
   animationLock = true;
+  updateButtons();
 
   secretTimer = setTimeout(() => {
     secretTimer = null;
     animationLock = false;
+
+    updateButtons();
   }, 1000);
 }
 
@@ -721,6 +756,7 @@ function startSecretPause() {
 
 function reset() {
   activeRareStringIsDebug = false;
+
   hideChanceAnnouncement();
 
   if (secretTimer !== null) {
@@ -728,7 +764,6 @@ function reset() {
     secretTimer = null;
   }
 
-  // ★ リセット時に7文字目の解除タイマーも解除
   if (animationLockTimer !== null) {
     clearTimeout(animationLockTimer);
     animationLockTimer = null;
@@ -757,7 +792,8 @@ function reset() {
 
   render();
 
-  statusEl.textContent = "「シャッフル！」を押して挑戦しよう。";
+  statusEl.textContent =
+    "「シャッフル！」を押して挑戦しよう。";
 
   statusEl.classList.remove("win");
   sparkleEl.classList.remove("show");
