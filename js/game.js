@@ -287,6 +287,9 @@ function winGame(isDebug = false) {
   const isBigWin = current === target;
 
   if (isBigWin) {
+    if (!isDebug) {
+  recordClear();
+}
     cleared = true;
     chanceMode = false;
     chanceStep = 0;
@@ -339,6 +342,12 @@ function shuffle() {
 
     // シークレットが完成したか判定
     if (rareStringStep >= activeRareString.text.length) {
+      // デバッグ以外で完成したシークレットを記録
+if (!activeRareStringIsDebug) {
+  recordSecret(activeRareString.text);
+}
+
+activeRareStringIsDebug = false;
       statusEl.textContent =
         `${activeRareString.display} シークレット${activeRareString.number}/10`;
 
@@ -406,6 +415,7 @@ function shuffle() {
   const rareString = drawRareString();
 
   if (rareString !== null) {
+    activeRareStringIsDebug = false;
     rareStringMode = true;
     activeRareString = rareString;
     rareStringStep = 1;
@@ -494,10 +504,11 @@ function debugClear() {
 
   letters = target.split("");
 
-  winGame();
+  winGame(true);
 }
 
 function startDebugRareString(rareString) {
+  activeRareStringIsDebug = true;
   if (cleared || animationLock) return;
 
   rareStringMode = true;
@@ -537,6 +548,7 @@ function debugTangomu() {
 // ========================================
 
 function reset() {
+  activeRareStringIsDebug = false;
   hideChanceAnnouncement();
 
   // シークレット停止中にリセットした場合も解除
