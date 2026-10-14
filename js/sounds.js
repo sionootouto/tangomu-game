@@ -1,6 +1,6 @@
 
 const soundFiles = {
-  button: "../sounds/button.mp3",
+  button: "../sounds/tap.mp3",
   clear: "../sounds/clear.mp3",
   secret: "../sounds/secret.mp3",
   chance: "../sounds/chance.mp3",
