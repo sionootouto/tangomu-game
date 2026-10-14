@@ -361,10 +361,32 @@ function shuffle() {
 
     render();
 
+    
     // シークレットが完成したか判定
     if (rareStringStep >= activeRareString.text.length) {
       // シークレット完成音
       playSE("secret");
+
+      // デバッグ以外で完成したシークレットを記録
+      if (!activeRareStringIsDebug) {
+        recordSecret(activeRareString.text);
+      }
+
+      activeRareStringIsDebug = false;
+
+      statusEl.textContent =
+        `${activeRareString.display} シークレット${activeRareString.number}/10`;
+
+      rareStringMode = false;
+      activeRareString = null;
+      rareStringStep = 0;
+
+      // 完成後も1秒間ボタン操作を停止
+      startSecretPause();
+
+      return;
+    }
+
 
       // デバッグ以外で完成したシークレットを記録
       if (!activeRareStringIsDebug) {
