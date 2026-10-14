@@ -2,6 +2,7 @@
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
+import { shuffledCopy, createChanceLetters } from "./shuffle.js";
 import { loadSave, saveGame, deleteSave } from "./save.js";
 import { achievements, checkAchievements } from "./achievements.js";
 import {
@@ -419,26 +420,7 @@ function hideChanceAnnouncement() {
   updateButtons();
 }
 
-// ========================================
-// 配列のシャッフル
-// ========================================
 
-function shuffledCopy() {
-  const array = ["t", "a", "n", "g", "o", "m", "u"];
-
-  let result;
-
-  do {
-    result = [...array];
-
-    for (let i = result.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [result[i], result[j]] = [result[j], result[i]];
-    }
-  } while (result.join("") === target);
-
-  return result;
-}
 
 // ========================================
 // レア文字列抽選
@@ -468,32 +450,7 @@ function drawRareString() {
   return null;
 }
 
-// ========================================
-// たんごむチャンスの文字順を決める
-// ========================================
 
-function createChanceLetters() {
-  const result = ["g", "o", "m", "u"];
-
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-
-  if (!dopaChanceActive) {
-    return result;
-  }
-
-  if (Math.random() < DOPA_TANGOMU_RATE) {
-    return ["g", "o", "m", "u"];
-  }
-
-  if (result.join("") === "gomu") {
-    [result[0], result[1]] = [result[1], result[0]];
-  }
-
-  return result;
-}
 
 // ========================================
 // 画面表示
