@@ -719,3 +719,5 @@ reset();
 
 // 以前のセーブデータも含めて、起動時に実績条件を再確認
 updateAchievements();
+
+setupSaveDeleteButton();
