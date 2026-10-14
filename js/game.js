@@ -282,7 +282,7 @@ function render() {
 // ゲームクリア判定
 // ========================================
 
-function winGame() {
+function winGame(isDebug = false) {
   const current = letters.join("");
   const isBigWin = current === target;
 
