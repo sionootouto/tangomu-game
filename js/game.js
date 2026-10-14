@@ -216,6 +216,7 @@ function showDopaEntrance() {
 
 function startDopaChance() {
   dopaChanceActive = true;
+  document.body.classList.add("dopa-rainbow");
   dopaChanceEndTime = Date.now() + DOPA_CHANCE_DURATION;
 
   if (dopaChanceInterval !== null) {
