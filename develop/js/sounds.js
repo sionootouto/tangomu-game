@@ -15,6 +15,7 @@ for (const [name, path] of Object.entries(soundFiles)) {
   sounds[name] = audio;
 }
 
+
 export function playSE(name) {
   const audio = sounds[name];
 
@@ -23,10 +24,15 @@ export function playSE(name) {
     return;
   }
 
+  // 特別な効果音が鳴るときはボタン音を止める
+  if (name !== "button" && sounds.button) {
+    sounds.button.pause();
+    sounds.button.currentTime = 0;
+  }
+
   audio.currentTime = 0;
 
   audio.play().catch((error) => {
     console.warn(`効果音を再生できませんでした: ${name}`, error);
   });
 }
-
