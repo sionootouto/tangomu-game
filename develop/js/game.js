@@ -413,10 +413,23 @@ function shuffle() {
     letters.push(chanceLetters[chanceStep]);
     chanceStep++;
 
-    if (letters.length === 7) {
-      winGame();
-      return;
-    }
+    
+if (letters.length === 7) {
+  const isBigWin = letters.join("") === target;
+
+  // 完成した瞬間からボタン操作を無効にする
+  animationLock = true;
+
+  winGame();
+
+  // たんごむなら1秒、それ以外なら0.5秒後に操作再開
+  setTimeout(() => {
+    animationLock = false;
+  }, isBigWin ? 1000 : 500);
+
+  return;
+}
+
 
     render();
 
