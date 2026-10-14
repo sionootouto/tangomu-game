@@ -298,6 +298,13 @@ function winGame(isDebug = false) {
   const current = letters.join("");
   const isBigWin = current === target;
 
+  // 効果音
+  if (isBigWin) {
+    playSE("clear");
+  } else if (chanceMode) {
+    playSE("chanceMiss");
+  }
+
   if (isBigWin) {
     // デバッグクリアは実績対象外
     if (!isDebug) {
@@ -356,6 +363,9 @@ function shuffle() {
 
     // シークレットが完成したか判定
     if (rareStringStep >= activeRareString.text.length) {
+      // シークレット完成音
+      playSE("secret");
+
       // デバッグ以外で完成したシークレットを記録
       if (!activeRareStringIsDebug) {
         recordSecret(activeRareString.text);
@@ -451,6 +461,9 @@ function shuffle() {
 
   // たんごむチャンス抽選
   if (Math.random() < CHANCE) {
+    // チャンス突入音
+    playSE("chance");
+
     chanceMode = true;
     chanceStep = 0;
 
@@ -623,6 +636,20 @@ function reset() {
 // ========================================
 // イベント登録・初期化
 // ========================================
+
+// ボタンを押したときの効果音
+// captureをtrueにして、ボタンの処理より先に再生する
+document.addEventListener(
+  "click",
+  (event) => {
+    const button = event.target.closest?.("button");
+
+    if (button) {
+      playSE("button");
+    }
+  },
+  true
+);
 
 shuffleButton.addEventListener("click", shuffle);
 resetButton.addEventListener("click", reset);
