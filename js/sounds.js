@@ -6,9 +6,9 @@ const soundFiles = {
   chance: "../sounds/chance.mp3",
   chanceMiss: "../sounds/chance-miss.mp3",
 
-  // DOPA CHANCE専用SE
+  // DOPA CHANCE専用音源
   dopaEnter: "../sounds/dopa-enter.mp3",
-  dopaChance: "../sounds/dopa-chance.mp3"
+  dopaBgm: "../sounds/dopa-chance.mp3"
 };
 
 const AudioContextClass =
@@ -18,6 +18,8 @@ const audioContext = new AudioContextClass();
 const audioBuffers = {};
 
 let loadingPromise = null;
+let dopaBgmSource = null;
+let dopaBgmGain = null;
 
 // 音声を先に読み込んでおく
 function loadSounds() {
@@ -36,22 +38,21 @@ function loadSounds() {
     })
   ).catch((error) => {
     loadingPromise = null;
-    console.error("効果音の読み込みに失敗しました", error);
+    console.error("音声の読み込みに失敗しました", error);
     throw error;
   });
 
   return loadingPromise;
 }
 
-// ページを開いたら、音声の読み込みを開始
 loadSounds().catch(() => {});
 
-// 効果音を再生
+// 通常の効果音を再生（重ねて再生可能）
 export function playSE(name) {
   const buffer = audioBuffers[name];
 
   if (!buffer) {
-    console.warn(`効果音の読み込み中です: ${name}`);
+    console.warn(`効果音の読み込み中、または未登録です: ${name}`);
     return;
   }
 
@@ -67,4 +68,53 @@ export function playSE(name) {
   gain.connect(audioContext.destination);
 
   source.start(0);
+}
+
+// DOPA CHANCE中のBGMをループ再生
+export function startDopaBGM() {
+  const buffer = audioBuffers.dopaBgm;
+
+  if (!buffer) {
+    console.warn("DOPA CHANCEのBGMがまだ読み込まれていません");
+    return;
+  }
+
+  // 二重再生を防ぐ
+  if (dopaBgmSource) return;
+
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+
+  dopaBgmSource = audioContext.createBufferSource();
+  dopaBgmGain = audioContext.createGain();
+
+  dopaBgmSource.buffer = buffer;
+  dopaBgmSource.loop = true;
+
+  // BGMの音量（0.0〜1.0）
+  dopaBgmGain.gain.value = 0.65;
+
+  dopaBgmSource.connect(dopaBgmGain);
+  dopaBgmGain.connect(audioContext.destination);
+
+  dopaBgmSource.onended = () => {
+    dopaBgmSource = null;
+    dopaBgmGain = null;
+  };
+
+  dopaBgmSource.start(0);
+}
+
+// DOPA CHANCEのBGMだけを停止
+export function stopDopaBGM() {
+  if (dopaBgmSource) {
+    const source = dopaBgmSource;
+
+    dopaBgmSource = null;
+    dopaBgmGain = null;
+
+    source.onended = null;
+    source.stop();
+  }
 }
