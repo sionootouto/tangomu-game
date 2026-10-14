@@ -270,6 +270,39 @@ function hideChanceAnnouncement() {
   lastChanceTouchEnd = 0;
 }
 
+
+function setupSaveDeleteButton() {
+  const button = document.createElement("button");
+
+  button.textContent = "セーブデータ削除";
+  button.style.position = "fixed";
+  button.style.bottom = "12px";
+  button.style.right = "12px";
+  button.style.zIndex = "9999";
+  button.style.padding = "10px 14px";
+  button.style.background = "#333";
+  button.style.color = "#fff";
+  button.style.border = "1px solid #888";
+  button.style.borderRadius = "8px";
+  button.style.cursor = "pointer";
+
+  button.addEventListener("click", () => {
+    const confirmed = confirm(
+      "本当にセーブデータを削除しますか？\n" +
+      "シャッフル回数・クリア回数・実績などがリセットされます。"
+    );
+
+    if (!confirmed) return;
+
+    deleteSave();
+    alert("セーブデータを削除しました。");
+    location.reload();
+  });
+
+  document.body.appendChild(button);
+}
+
+
 // ========================================
 // シークレット中の操作停止
 // ========================================
