@@ -652,17 +652,26 @@ function reset() {
 
 // ボタンを押したときの効果音
 // captureをtrueにして、ボタンの処理より先に再生する
+
 document.addEventListener(
   "click",
   (event) => {
     const button = event.target.closest?.("button");
 
     if (button) {
+      // 操作禁止中なら、ボタンのクリック自体を止める
+      if (animationLock) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        return;
+      }
+
       playSE("button");
     }
   },
   true
 );
+
 
 shuffleButton.addEventListener("click", shuffle);
 resetButton.addEventListener("click", reset);
