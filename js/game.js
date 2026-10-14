@@ -2,7 +2,7 @@
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
-import { loadSave, saveGame } from "./save.js";
+import { loadSave, saveGame, deleteSave } from "./save.js";
 import { checkAchievements } from "./achievements.js";
 
 let letters = [];
