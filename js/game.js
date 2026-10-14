@@ -221,6 +221,7 @@ function showDopaEntrance() {
 function startDopaChance() {
   dopaChanceActive = true;
   document.body.classList.add("dopa-rainbow");
+  startDopaBGM();
   dopaChanceEndTime = Date.now() + DOPA_CHANCE_DURATION;
 
   if (dopaChanceInterval !== null) {
@@ -277,6 +278,7 @@ function startDopaChance() {
 function endDopaChance() {
   dopaChanceActive = false;
   document.body.classList.remove("dopa-rainbow");
+  stopDopaBGM();
 
   if (dopaChanceInterval !== null) {
     clearInterval(dopaChanceInterval);
