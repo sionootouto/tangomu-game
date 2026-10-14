@@ -60,3 +60,10 @@ export function saveGame(data) {
   }
 }
 
+
+ // セーブデータを削除する
+export function deleteSave() {
+  localStorage.removeItem(SAVE_KEY);
+}
+
+
