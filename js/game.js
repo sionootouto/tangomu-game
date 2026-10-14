@@ -1,3 +1,4 @@
+
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
@@ -91,23 +92,23 @@ let animationLock = false;
 let chanceTimer = null;
 let secretTimer = null;
 
+// ★ 操作ロック解除タイマーを追加
+let animationLockTimer = null;
+
 // ========================================
 // DOPA CHANCE
 // ========================================
 
-// DOPA CHANCEの状態
 let dopaChanceActive = false;
 let dopaChanceEndTime = 0;
 let dopaChanceInterval = null;
 let dopaBanner = null;
 
-// DOPA CHANCEの設定
 const DOPA_CHANCE_RATE = 1 / 500;
 const DOPA_CHANCE_DURATION = 60 * 1000;
 const DOPA_SECRET_MULTIPLIER = 10;
 const DOPA_CHANCE_MULTIPLIER = 5;
 
-// DOPA CHANCE開始
 function startDopaChance() {
   dopaChanceActive = true;
   dopaChanceEndTime = Date.now() + DOPA_CHANCE_DURATION;
@@ -116,7 +117,6 @@ function startDopaChance() {
     clearInterval(dopaChanceInterval);
   }
 
-  // バナーを初めて表示するときに作成
   if (!dopaBanner) {
     dopaBanner = document.createElement("div");
 
@@ -143,7 +143,6 @@ function startDopaChance() {
 
   dopaBanner.hidden = false;
 
-  // 残り時間を表示
   function updateDopaTimer() {
     const remaining = Math.ceil(
       (dopaChanceEndTime - Date.now()) / 1000
@@ -159,14 +158,12 @@ function startDopaChance() {
   }
 
   updateDopaTimer();
-
   dopaChanceInterval = setInterval(updateDopaTimer, 200);
 
   statusEl.textContent =
     "🔥 DOPA CHANCE突入！ チャンス到来！ 🔥";
 }
 
-// DOPA CHANCE終了
 function endDopaChance() {
   dopaChanceActive = false;
 
@@ -203,7 +200,6 @@ const chanceOverlay = document.getElementById("chanceOverlay");
 
 const gameButtons = document.querySelectorAll(".buttons button");
 
-// デバッグボタンの表示設定
 debugButton.hidden = !DEBUG_MODE;
 debugEeteButton.hidden = !DEBUG_MODE;
 debugTangomuButton.hidden = !DEBUG_MODE;
@@ -342,26 +338,20 @@ function drawRareString() {
 function createChanceLetters() {
   const result = ["g", "o", "m", "u"];
 
-  // 通常どおりシャッフル
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
 
-  // 通常時はランダムな順番のまま返す
   if (!dopaChanceActive) {
     return result;
   }
 
   // DOPA CHANCE中は完成率を5倍にする
-  // 通常時の完成率は1/24
-  // DOPA CHANCE中の完成率は5/24
   if (Math.random() < 5 / 24) {
     return ["g", "o", "m", "u"];
   }
 
-  // 当たりを引かなかった場合は、
-  // 間違って完成順になっていた配列を入れ替える
   if (result.join("") === "gomu") {
     [result[0], result[1]] = [result[1], result[0]];
   }
@@ -401,7 +391,6 @@ function winGame(isDebug = false) {
   const current = letters.join("");
   const isBigWin = current === target;
 
-  // 効果音
   if (isBigWin) {
     playSE("clear");
   } else if (chanceMode) {
@@ -409,7 +398,6 @@ function winGame(isDebug = false) {
   }
 
   if (isBigWin) {
-    // デバッグクリアは実績対象外
     if (!isDebug) {
       recordClear();
     }
@@ -454,7 +442,6 @@ function shuffle() {
   count++;
   countEl.textContent = count;
 
-  // 累計シャッフル回数を保存し、実績を判定
   recordShuffle();
 
   // ----------------------------------------
@@ -467,11 +454,9 @@ function shuffle() {
 
     render();
 
-    // シークレットが完成したか判定
     if (rareStringStep >= activeRareString.text.length) {
       playSE("secret");
 
-      // デバッグ以外で完成したシークレットを記録
       if (!activeRareStringIsDebug) {
         recordSecret(activeRareString.text);
       }
@@ -484,15 +469,11 @@ function shuffle() {
       activeRareString = null;
       rareStringStep = 0;
 
-      // 完成後も1秒間ボタン操作を停止
       startSecretPause();
-
       return;
     }
 
-    // 完成前は次の文字まで1秒間停止
     startSecretPause();
-
     return;
   }
 
@@ -523,19 +504,27 @@ function shuffle() {
     letters.push(chanceLetters[chanceStep]);
     chanceStep++;
 
-    // 7文字そろったら成功・失敗を判定
+    // ★ 修正箇所：7文字出切ったとき
     if (letters.length === 7) {
       const isBigWin = letters.join("") === target;
 
-      // 完成した瞬間からボタン操作を無効にする
+      // まず操作をロックする
       animationLock = true;
 
-      winGame();
+      // 既存の解除タイマーがあれば解除する
+      if (animationLockTimer !== null) {
+        clearTimeout(animationLockTimer);
+        animationLockTimer = null;
+      }
 
-      // たんごむなら1秒、それ以外なら0.5秒後に操作再開
-      setTimeout(() => {
+      // winGame()より先に解除タイマーを設定する
+      animationLockTimer = setTimeout(() => {
         animationLock = false;
+        animationLockTimer = null;
       }, isBigWin ? 1000 : 500);
+
+      // そのあとに成功・失敗の演出を実行
+      winGame();
 
       return;
     }
@@ -605,13 +594,11 @@ function shuffle() {
     : CHANCE;
 
   if (Math.random() < chanceProbability) {
-    // チャンス突入音
     playSE("chance");
 
     chanceMode = true;
     chanceStep = 0;
 
-    // DOPA CHANCE中は完成しやすい文字順にする
     chanceLetters = createChanceLetters();
 
     letters = ["t", "a", "n"];
@@ -675,7 +662,6 @@ function debugClear() {
 }
 
 function startDebugRareString(rareString) {
-  // 操作できないときは何も変更しない
   if (cleared || animationLock) return;
 
   activeRareStringIsDebug = true;
@@ -742,6 +728,12 @@ function reset() {
     secretTimer = null;
   }
 
+  // ★ リセット時に7文字目の解除タイマーも解除
+  if (animationLockTimer !== null) {
+    clearTimeout(animationLockTimer);
+    animationLockTimer = null;
+  }
+
   animationLock = false;
 
   count = 0;
@@ -778,16 +770,12 @@ function reset() {
 // イベント登録・初期化
 // ========================================
 
-// ボタンを押したときの効果音
-// captureをtrueにして、ボタンの処理より先に再生
-
 document.addEventListener(
   "click",
   (event) => {
     const button = event.target.closest?.("button");
 
     if (button) {
-      // 演出中など、操作禁止中は効果音も鳴らさない
       if (animationLock || button.disabled) {
         event.preventDefault();
         event.stopImmediatePropagation();
@@ -807,7 +795,6 @@ debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
 debugTangomuButton.addEventListener("click", debugTangomu);
 
-// 実績一覧・解除通知・セーブデータ削除のUIを初期化
 setupAchievementUI({
   achievements,
   getSaveData: () => saveData,
@@ -819,5 +806,4 @@ setupAchievementUI({
 
 reset();
 
-// 起動時に保存済みデータの実績条件を再確認
 updateAchievements();
