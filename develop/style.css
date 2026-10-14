@@ -1048,3 +1048,38 @@ button * {
   }
 }
 
+
+/* ========================================
+   DOPA CHANCE中の虹色背景
+======================================== */
+
+body.dopa-rainbow {
+  background: linear-gradient(
+    120deg,
+    #ff0000,
+    #ff8800,
+    #ffee00,
+    #00dd44,
+    #00ccff,
+    #3344ff,
+    #bb33ff,
+    #ff0088,
+    #ff0000
+  );
+  background-size: 400% 400%;
+  animation: dopaRainbowBackground 5s linear infinite;
+}
+
+@keyframes dopaRainbowBackground {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
