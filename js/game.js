@@ -101,14 +101,8 @@ let dopaBanner = null;
 
 const DOPA_CHANCE_RATE = 1 / 500;
 const DOPA_CHANCE_DURATION = 60 * 1000;
-
-// シークレットの出現率は10倍のまま
 const DOPA_SECRET_MULTIPLIER = 10;
-
-// たんごむチャンスの突入率は通常時の2倍
 const DOPA_CHANCE_MULTIPLIER = 2;
-
-// DOPA中のたんごむチャンス完成率
 const DOPA_TANGOMU_RATE = 1 / 3;
 
 function startDopaChance() {
@@ -192,6 +186,7 @@ const sparkleEl = document.getElementById("sparkle");
 
 const shuffleButton = document.getElementById("shuffle");
 const resetButton = document.getElementById("reset");
+const resetCountButton = document.getElementById("resetCount");
 
 const debugButton = document.getElementById("debug");
 const debugEeteButton = document.getElementById("debugEete");
@@ -339,19 +334,16 @@ function drawRareString() {
     ? DOPA_SECRET_MULTIPLIER
     : 1;
 
-  // シークレット1～8
   if (roll < 240 * multiplier) {
     return rareStrings[
       Math.floor(roll / (30 * multiplier))
     ];
   }
 
-  // eete シークレット
   if (roll < 250 * multiplier) {
     return rareStrings[8];
   }
 
-  // tangomu シークレット
   if (roll < 253 * multiplier) {
     return rareStrings[9];
   }
@@ -366,24 +358,19 @@ function drawRareString() {
 function createChanceLetters() {
   const result = ["g", "o", "m", "u"];
 
-  // まず4文字をランダムに並べる
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
 
-  // 通常時はランダムな並びをそのまま使う
   if (!dopaChanceActive) {
     return result;
   }
 
-  // DOPA CHANCE中は約1/3で tangomu が完成する
   if (Math.random() < DOPA_TANGOMU_RATE) {
     return ["g", "o", "m", "u"];
   }
 
-  // 残り約2/3では tangomu が完成しない並びにする
-  // ランダム結果が gomu だった場合だけ入れ替える
   if (result.join("") === "gomu") {
     [result[0], result[1]] = [result[1], result[0]];
   }
@@ -471,7 +458,8 @@ function winGame(isDebug = false) {
 function shuffle() {
   if (animationLock) return;
 
-  // クリア後に押したら次のゲームへ
+  // クリア後は次のゲームへ。
+  // シャッフル回数は維持する。
   if (cleared) {
     reset();
     return;
@@ -542,7 +530,6 @@ function shuffle() {
     letters.push(chanceLetters[chanceStep]);
     chanceStep++;
 
-    // 7文字完成時の処理
     if (letters.length === 7) {
       const isBigWin = letters.join("") === target;
 
@@ -597,7 +584,6 @@ function shuffle() {
 
   // ----------------------------------------
   // レア文字列抽選
-  // シークレットを先に判定する
   // ----------------------------------------
 
   const rareString = drawRareString();
@@ -757,7 +743,8 @@ function startSecretPause() {
 }
 
 // ========================================
-// リセット
+// ゲーム状態のリセット
+// シャッフル回数は維持する
 // ========================================
 
 function reset() {
@@ -777,7 +764,7 @@ function reset() {
 
   animationLock = false;
 
-  count = 0;
+  // count はここでは0に戻さない
   cleared = false;
 
   chanceMode = false;
@@ -787,8 +774,6 @@ function reset() {
   rareStringMode = false;
   activeRareString = null;
   rareStringStep = 0;
-
-  countEl.textContent = "0";
 
   letters = shuffledCopy();
 
@@ -809,6 +794,19 @@ function reset() {
 }
 
 // ========================================
+// シャッフル回数だけリセット
+// ========================================
+
+function resetShuffleCount() {
+  count = 0;
+  countEl.textContent = "0";
+
+  statusEl.textContent = "シャッフル回数をリセットしたよ！";
+
+  playSE("button");
+}
+
+// ========================================
 // イベント登録・初期化
 // ========================================
 
@@ -824,7 +822,10 @@ document.addEventListener(
         return;
       }
 
-      playSE("button");
+      // 回数リセットボタンは専用処理内で効果音を鳴らす
+      if (button.id !== "resetCount") {
+        playSE("button");
+      }
     }
   },
   true
@@ -832,6 +833,7 @@ document.addEventListener(
 
 shuffleButton.addEventListener("click", shuffle);
 resetButton.addEventListener("click", reset);
+resetCountButton.addEventListener("click", resetShuffleCount);
 
 debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
