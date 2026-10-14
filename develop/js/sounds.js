@@ -4,7 +4,11 @@ const soundFiles = {
   clear: "../sounds/clear.mp3",
   secret: "../sounds/secret.mp3",
   chance: "../sounds/chance.mp3",
-  chanceMiss: "../sounds/chance-miss.mp3"
+  chanceMiss: "../sounds/chance-miss.mp3",
+
+  // DOPA CHANCE専用SE
+  dopaEnter: "../sounds/dopa-enter.mp3",
+  dopaChance: "../sounds/dopa-chance.mp3"
 };
 
 const AudioContextClass =
