@@ -9,7 +9,11 @@ import {
   showAchievementToast,
   refreshAchievementList
 } from "./achievementUI.js";
-import { playSE } from "./sounds.js";
+import {
+  playSE,
+  startDopaBGM,
+  stopDopaBGM
+} from "./sounds.js";
 
 let letters = [];
 let chanceLetters = [];
