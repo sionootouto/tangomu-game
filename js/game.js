@@ -697,7 +697,7 @@ function shuffle() {
     chanceMode = true;
     chanceStep = 0;
 
-    chanceLetters = createChanceLetters();
+    chanceLetters = createChanceLetters(dopaChanceActive, DOPA_TANGOMU_RATE);
 
     letters = ["t", "a", "n"];
 
