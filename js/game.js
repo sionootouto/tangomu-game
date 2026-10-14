@@ -322,11 +322,13 @@ function winGame() {
 // ========================================
 
 function shuffle() {
-  // クリア後、または演出・停止中は処理しない
   if (cleared || animationLock) return;
 
   count++;
   countEl.textContent = count;
+
+  // 累計シャッフル回数を保存
+  recordShuffle();
 
   // レア文字列の表示中
   if (rareStringMode) {
