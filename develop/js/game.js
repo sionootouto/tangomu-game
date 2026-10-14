@@ -98,12 +98,121 @@ let dopaChanceActive = false;
 let dopaChanceEndTime = 0;
 let dopaChanceInterval = null;
 let dopaBanner = null;
+let dopaEntranceTimer = null;
 
 const DOPA_CHANCE_RATE = 1 / 500;
 const DOPA_CHANCE_DURATION = 60 * 1000;
 const DOPA_SECRET_MULTIPLIER = 10;
 const DOPA_CHANCE_MULTIPLIER = 2;
 const DOPA_TANGOMU_RATE = 1 / 3;
+
+
+function showDopaEntrance() {
+  animationLock = true;
+  updateButtons();
+
+  const overlay = document.createElement("div");
+  overlay.className = "dopa-entrance";
+
+  overlay.innerHTML = `
+    <div class="dopa-flash"></div>
+    <div class="dopa-lightning"></div>
+    <div class="dopa-entrance-content">
+      <div class="dopa-warning">SPECIAL EVENT</div>
+      <div class="dopa-title">DOPA</div>
+      <div class="dopa-subtitle">CHANCE!!</div>
+      <div class="dopa-message">激アツ突入！！</div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  playSE("clear");
+
+  requestAnimationFrame(() => {
+    overlay.classList.add("active");
+  });
+
+  // 突入演出
+  dopaEntranceTimer = setTimeout(() => {
+    overlay.classList.add("dopa-exit");
+
+    setTimeout(() => {
+      overlay.remove();
+
+      // 効果説明画面
+      const infoOverlay = document.createElement("div");
+      infoOverlay.className = "dopa-info";
+
+      infoOverlay.innerHTML = `
+        <div class="dopa-info-content">
+          <div class="dopa-info-heading">
+            🔥 DOPA CHANCE 突入中!! 🔥
+          </div>
+
+          <div class="dopa-info-subheading">
+            60秒間のスペシャルチャンス！
+          </div>
+
+          <div class="dopa-info-item">
+            <span>✨</span>
+            <div>
+              <strong>チャンス発生確率 2倍！</strong>
+              <small>たんごむチャンスが出やすくなる！</small>
+            </div>
+          </div>
+
+          <div class="dopa-info-item">
+            <span>💎</span>
+            <div>
+              <strong>シークレット出現確率 10倍！</strong>
+              <small>レアな文字列を狙え！</small>
+            </div>
+          </div>
+
+          <div class="dopa-info-item">
+            <span>🎯</span>
+            <div>
+              <strong>たんごむチャンス成功率 1/3！</strong>
+              <small>チャンスをつかみ取れ！</small>
+            </div>
+          </div>
+
+          <div class="dopa-info-footer">
+            このチャンスを逃すな！！
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(infoOverlay);
+
+      requestAnimationFrame(() => {
+        infoOverlay.classList.add("active");
+      });
+
+      statusEl.textContent = "🔥 DOPA CHANCE突入！ 🔥";
+
+      // 説明を3秒表示
+      dopaEntranceTimer = setTimeout(() => {
+        infoOverlay.classList.remove("active");
+
+        setTimeout(() => {
+          infoOverlay.remove();
+          dopaEntranceTimer = null;
+
+          animationLock = false;
+          updateButtons();
+
+          // 説明が終わってから60秒を開始
+          startDopaChance();
+        }, 300);
+
+      }, 3000);
+
+    }, 350);
+
+  }, 2650);
+}
+
 
 function startDopaChance() {
   dopaChanceActive = true;
@@ -578,7 +687,7 @@ function shuffle() {
     !dopaChanceActive &&
     Math.random() < DOPA_CHANCE_RATE
   ) {
-    startDopaChance();
+    showDopaEntrance();
     return;
   }
 
