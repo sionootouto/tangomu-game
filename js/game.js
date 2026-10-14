@@ -3,7 +3,12 @@ import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
 import { loadSave, saveGame, deleteSave } from "./save.js";
-import { checkAchievements } from "./achievements.js";
+import { achievements, checkAchievements } from "./achievements.js";
+import {
+  setupAchievementUI,
+  showAchievementToast,
+  refreshAchievementList
+} from "./achievementUI.js";
 
 let letters = [];
 let chanceLetters = [];
@@ -24,69 +29,16 @@ function persistSave() {
   saveGame(saveData);
 }
 
-// 実績解除通知の表示要素
-const achievementToast = document.createElement("div");
-
-Object.assign(achievementToast.style, {
-  position: "fixed",
-  top: "20px",
-  left: "50%",
-  transform: "translateX(-50%)",
-  zIndex: "10000",
-  padding: "12px 20px",
-  background: "#292929",
-  color: "#ffffff",
-  border: "2px solid #f5c542",
-  borderRadius: "12px",
-  fontWeight: "bold",
-  textAlign: "center",
-  whiteSpace: "pre-line",
-  opacity: "0",
-  transition: "opacity 0.25s",
-  pointerEvents: "none",
-  maxWidth: "90%",
-  width: "max-content",
-  boxSizing: "border-box"
-});
-
-document.body.appendChild(achievementToast);
-
-let achievementToastTimer = null;
-
-// 実績解除の通知を表示する
-function showAchievementToast(newlyUnlocked) {
-  if (newlyUnlocked.length === 0) {
-    return;
-  }
-
-  achievementToast.textContent =
-    "🏆 実績解除！\n" +
-    newlyUnlocked
-      .map((achievement) => achievement.name)
-      .join("\n");
-
-  achievementToast.style.opacity = "1";
-
-  if (achievementToastTimer !== null) {
-    clearTimeout(achievementToastTimer);
-  }
-
-  achievementToastTimer = setTimeout(() => {
-    achievementToast.style.opacity = "0";
-    achievementToastTimer = null;
-  }, 2500);
-}
-
 // 条件を満たした実績を解除して保存する
 function updateAchievements() {
   const newlyUnlocked = checkAchievements(saveData);
 
-  if (newlyUnlocked.length === 0) {
-    return;
+  if (newlyUnlocked.length > 0) {
+    persistSave();
+    showAchievementToast(newlyUnlocked);
   }
 
-  persistSave();
-  showAchievementToast(newlyUnlocked);
+  refreshAchievementList();
 }
 
 // シャッフル回数を記録
@@ -268,56 +220,6 @@ function hideChanceAnnouncement() {
 
   animationLock = false;
   lastChanceTouchEnd = 0;
-}
-
-
-function setupSaveDeleteButton() {
-  const button = document.createElement("button");
-
-  button.textContent = "セーブデータ削除";
-  button.style.position = "fixed";
-  button.style.bottom = "12px";
-  button.style.right = "12px";
-  button.style.zIndex = "9999";
-  button.style.padding = "10px 14px";
-  button.style.background = "#333";
-  button.style.color = "#fff";
-  button.style.border = "1px solid #888";
-  button.style.borderRadius = "8px";
-  button.style.cursor = "pointer";
-
-  button.addEventListener("click", () => {
-    const confirmed = confirm(
-      "本当にセーブデータを削除しますか？\n" +
-      "シャッフル回数・クリア回数・実績などがリセットされます。"
-    );
-
-    if (!confirmed) return;
-
-    deleteSave();
-    alert("セーブデータを削除しました。");
-    location.reload();
-  });
-
-  document.body.appendChild(button);
-}
-
-
-// ========================================
-// シークレット中の操作停止
-// ========================================
-
-function startSecretPause() {
-  if (secretTimer !== null) {
-    clearTimeout(secretTimer);
-  }
-
-  animationLock = true;
-
-  secretTimer = setTimeout(() => {
-    secretTimer = null;
-    animationLock = false;
-  }, 1000);
 }
 
 // ========================================
@@ -656,6 +558,23 @@ function debugTangomu() {
 }
 
 // ========================================
+// シークレット中の操作停止
+// ========================================
+
+function startSecretPause() {
+  if (secretTimer !== null) {
+    clearTimeout(secretTimer);
+  }
+
+  animationLock = true;
+
+  secretTimer = setTimeout(() => {
+    secretTimer = null;
+    animationLock = false;
+  }, 1000);
+}
+
+// ========================================
 // リセット
 // ========================================
 
@@ -701,7 +620,7 @@ function reset() {
 }
 
 // ========================================
-// イベント登録
+// イベント登録・初期化
 // ========================================
 
 shuffleButton.addEventListener("click", shuffle);
@@ -711,13 +630,17 @@ debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
 debugTangomuButton.addEventListener("click", debugTangomu);
 
-// ========================================
-// 初期化
-// ========================================
+// 実績一覧・解除通知・セーブデータ削除のUIを初期化
+setupAchievementUI({
+  achievements,
+  getSaveData: () => saveData,
+  onDeleteSave: () => {
+    deleteSave();
+    location.reload();
+  }
+});
 
 reset();
 
-// 以前のセーブデータも含めて、起動時に実績条件を再確認
+// 起動時に保存済みデータの実績条件を再確認
 updateAchievements();
-
-setupSaveDeleteButton();
