@@ -375,6 +375,9 @@ button * {
 
 /* 実績一覧ボタン */
 .menu-buttons {
+  #resetCount {
+  margin-top: 20px;
+}
   margin-top: 18px;
 }
 
