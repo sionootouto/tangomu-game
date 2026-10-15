@@ -2,12 +2,13 @@
 // シークレット機能
 // ========================================
 
+// シークレットの状態を作成
 export function createSecretState() {
   return {
     active: false,
     current: null,
     step: 0,
-    isDebug: false,
+    isDebug: false
   };
 }
 
@@ -31,17 +32,24 @@ export function startSecret(
 // ========================================
 
 export function advanceSecret(state) {
+  if (!state.active || !state.current) {
+    throw new Error(
+      "進行中のシークレットがありません。"
+    );
+  }
+
   const secret = state.current;
   const isDebug = state.isDebug;
 
   const letter = secret.text[state.step];
+
   state.step++;
 
   return {
     letter,
     completed: state.step >= secret.text.length,
     secret,
-    isDebug,
+    isDebug
   };
 }
 
