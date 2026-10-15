@@ -1,236 +1,120 @@
-import {
-  startDopaBGM,
-  stopDopaBGM,
-  playSE
-} from "./sounds.js";
 
-// ========================================
-// DOPA CHANCEの設定
-// ========================================
+const soundFiles = {
+  button: "../sounds/tap.mp3",
+  clear: "../sounds/clear.mp3",
+  secret: "../sounds/secret.mp3",
+  chance: "../sounds/chance.mp3",
+  chanceMiss: "../sounds/chance-miss.mp3",
 
-const DOPA_CHANCE_DURATION = 60 * 1000;
+  // DOPA CHANCE専用音源
+  dopaEnter: "../sounds/dopa-enter.mp3",
+  dopaBgm: "../sounds/dopa-chance.mp3"
+};
 
-// ========================================
-// DOPA CHANCEの管理
-// ========================================
+const AudioContextClass =
+  window.AudioContext || window.webkitAudioContext;
 
-let dopaChanceActive = false;
-let dopaChanceEndTime = 0;
-let dopaChanceInterval = null;
-let dopaBanner = null;
-let dopaEntranceTimer = null;
+const audioContext = new AudioContextClass();
+const audioBuffers = {};
 
-// ========================================
-// DOPA CHANCEの状態確認
-// ========================================
+let loadingPromise = null;
+let dopaBgmSource = null;
+let dopaBgmGain = null;
 
-export function isDopaChanceActive() {
-  return dopaChanceActive;
-}
+// 音声を先に読み込んでおく
+function loadSounds() {
+  if (loadingPromise) return loadingPromise;
 
-// ========================================
-// DOPA CHANCE突入演出
-// ========================================
+  loadingPromise = Promise.all(
+    Object.entries(soundFiles).map(async ([name, path]) => {
+      const response = await fetch(new URL(path, import.meta.url));
 
-export function showDopaEntrance({
-  statusEl,
-  setAnimationLock,
-  updateButtons,
-  startDopaChance
-}) {
-  setAnimationLock(true);
-  updateButtons();
+      if (!response.ok) {
+        throw new Error(`音声を読み込めません: ${path}`);
+      }
 
-  const overlay = document.createElement("div");
-  overlay.className = "dopa-entrance";
-
-  overlay.innerHTML = `
-    <div class="dopa-flash"></div>
-    <div class="dopa-lightning"></div>
-    <div class="dopa-entrance-content">
-      <div class="dopa-warning">SPECIAL EVENT</div>
-      <div class="dopa-title">DOPA</div>
-      <div class="dopa-subtitle">CHANCE!!</div>
-      <div class="dopa-message">激アツ突入！！</div>
-    </div>
-  `;
-
-  document.body.appendChild(overlay);
-  playSE("dopaEnter");
-
-  requestAnimationFrame(() => {
-    overlay.classList.add("active");
+      const data = await response.arrayBuffer();
+      audioBuffers[name] = await audioContext.decodeAudioData(data);
+    })
+  ).catch((error) => {
+    loadingPromise = null;
+    console.error("音声の読み込みに失敗しました", error);
+    throw error;
   });
 
-  dopaEntranceTimer = setTimeout(() => {
-    overlay.classList.add("dopa-exit");
-
-    setTimeout(() => {
-      overlay.remove();
-
-      const infoOverlay = document.createElement("div");
-      infoOverlay.className = "dopa-info";
-
-      infoOverlay.innerHTML = `
-        <div class="dopa-info-content">
-          <div class="dopa-info-heading">
-            🔥 DOPA CHANCE 突入中!! 🔥
-          </div>
-
-          <div class="dopa-info-subheading">
-            60秒間のスペシャルチャンス！
-          </div>
-
-          <div class="dopa-info-item">
-            <span>✨</span>
-            <div>
-              <strong>チャンス発生確率 2倍！</strong>
-              <small>たんごむチャンスが出やすくなる！</small>
-            </div>
-          </div>
-
-          <div class="dopa-info-item">
-            <span>💎</span>
-            <div>
-              <strong>シークレット出現確率 10倍！</strong>
-              <small>レアな文字列を狙え！</small>
-            </div>
-          </div>
-
-          <div class="dopa-info-item">
-            <span>🎯</span>
-            <div>
-              <strong>たんごむチャンス成功率 1/3！</strong>
-              <small>チャンスをつかみ取れ！</small>
-            </div>
-          </div>
-
-          <div class="dopa-info-footer">
-            このチャンスを逃すな！！
-          </div>
-        </div>
-      `;
-
-      document.body.appendChild(infoOverlay);
-
-      requestAnimationFrame(() => {
-        infoOverlay.classList.add("active");
-      });
-
-      statusEl.textContent = "🔥 DOPA CHANCE突入！ 🔥";
-
-      dopaEntranceTimer = setTimeout(() => {
-        infoOverlay.classList.remove("active");
-
-        setTimeout(() => {
-          infoOverlay.remove();
-          dopaEntranceTimer = null;
-
-          setAnimationLock(false);
-          updateButtons();
-
-          startDopaChance();
-        }, 300);
-
-      }, 3000);
-
-    }, 350);
-
-  }, 2650);
+  return loadingPromise;
 }
 
-// ========================================
-// DOPA CHANCE開始
-// ========================================
+loadSounds().catch(() => {});
 
-export function startDopaChance(statusEl) {
-  dopaChanceActive = true;
-  document.body.classList.add("dopa-rainbow");
+// 通常の効果音を再生（重ねて再生可能）
+export function playSE(name) {
+  const buffer = audioBuffers[name];
 
-  startDopaBGM();
-
-  dopaChanceEndTime = Date.now() + DOPA_CHANCE_DURATION;
-
-  if (dopaChanceInterval !== null) {
-    clearInterval(dopaChanceInterval);
+  if (!buffer) {
+    console.warn(`効果音の読み込み中、または未登録です: ${name}`);
+    return;
   }
 
-  if (!dopaBanner) {
-    dopaBanner = document.createElement("div");
-
-    Object.assign(dopaBanner.style, {
-      position: "fixed",
-      top: "12px",
-      left: "50%",
-      transform: "translateX(-50%)",
-      zIndex: "9999",
-      padding: "12px 20px",
-      borderRadius: "12px",
-      background: "linear-gradient(135deg, #7c3aed, #db2777)",
-      color: "#ffffff",
-      fontWeight: "bold",
-      fontSize: "18px",
-      textAlign: "center",
-      boxShadow: "0 0 20px rgba(168, 85, 247, 0.8)",
-      pointerEvents: "none",
-      whiteSpace: "nowrap",
-    });
-
-    document.body.appendChild(dopaBanner);
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
   }
 
-  dopaBanner.hidden = false;
+  const source = audioContext.createBufferSource();
+  const gain = audioContext.createGain();
 
-  function updateDopaTimer() {
-    const remaining = Math.ceil(
-      (dopaChanceEndTime - Date.now()) / 1000
-    );
+  source.buffer = buffer;
+  source.connect(gain);
+  gain.connect(audioContext.destination);
 
-    if (remaining <= 0) {
-      endDopaChance();
-      return;
+  source.start(0);
+}
+
+// DOPA CHANCE中のBGMをループ再生
+
+export async function startDopaBGM() {
+  try {
+    await loadSounds();
+
+    const buffer = audioBuffers.dopaBgm;
+
+    if (!buffer || dopaBgmSource) return;
+
+    if (audioContext.state === "suspended") {
+      await audioContext.resume();
     }
 
-    dopaBanner.textContent =
-      `🔥 DOPA CHANCE!! 残り ${remaining} 秒 🔥`;
+    dopaBgmSource = audioContext.createBufferSource();
+    dopaBgmGain = audioContext.createGain();
+
+    dopaBgmSource.buffer = buffer;
+    dopaBgmSource.loop = true;
+    dopaBgmGain.gain.value = 0.65;
+
+    dopaBgmSource.connect(dopaBgmGain);
+    dopaBgmGain.connect(audioContext.destination);
+
+    dopaBgmSource.onended = () => {
+      dopaBgmSource = null;
+      dopaBgmGain = null;
+    };
+
+    dopaBgmSource.start(0);
+  } catch (error) {
+    console.error("DOPA CHANCEのBGMを再生できませんでした", error);
   }
-
-  updateDopaTimer();
-  dopaChanceInterval = setInterval(updateDopaTimer, 200);
-
-  statusEl.textContent =
-    "🔥 DOPA CHANCE突入！ チャンス到来！ 🔥";
 }
 
-// ========================================
-// DOPA CHANCE終了
-// ========================================
 
-export function endDopaChance() {
-  dopaChanceActive = false;
+// DOPA CHANCEのBGMだけを停止
+export function stopDopaBGM() {
+  if (dopaBgmSource) {
+    const source = dopaBgmSource;
 
-  document.body.classList.remove("dopa-rainbow");
-  stopDopaBGM();
+    dopaBgmSource = null;
+    dopaBgmGain = null;
 
-  if (dopaChanceInterval !== null) {
-    clearInterval(dopaChanceInterval);
-    dopaChanceInterval = null;
-  }
-
-  if (dopaBanner) {
-    dopaBanner.hidden = true;
-  }
-
-  dopaChanceEndTime = 0;
-}
-
-// ========================================
-// DOPA CHANCE関連のタイマーを解除
-// ========================================
-
-export function cancelDopaEntrance() {
-  if (dopaEntranceTimer !== null) {
-    clearTimeout(dopaEntranceTimer);
-    dopaEntranceTimer = null;
+    source.onended = null;
+    source.stop();
   }
 }
