@@ -1,4 +1,3 @@
-
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
@@ -16,8 +15,7 @@ import { playSE } from "./sounds.js";
 import {
   isDopaChanceActive,
   showDopaEntrance,
-  startDopaChance,
-  endDopaChance
+  startDopaChance
 } from "./dopaChance.js";
 
 let letters = [];
@@ -83,14 +81,12 @@ let secretTimer = null;
 let animationLockTimer = null;
 
 // ========================================
-// DOPA CHANCE
+// DOPA CHANCE設定
 // ========================================
 
 const DOPA_CHANCE_RATE = 1 / 500;
-const DOPA_SECRET_MULTIPLIER = 10;
 const DOPA_CHANCE_MULTIPLIER = 2;
 const DOPA_TANGOMU_RATE = 1 / 3;
-
 
 // ========================================
 // HTML要素
@@ -419,15 +415,24 @@ function shuffle() {
     !isDopaChanceActive() &&
     Math.random() < DOPA_CHANCE_RATE
   ) {
-    showDopaEntrance();
+    showDopaEntrance({
+      statusEl,
+      setAnimationLock: (value) => {
+        animationLock = value;
+      },
+      updateButtons,
+      startDopaChance: () => startDopaChance(statusEl)
+    });
+
     return;
   }
 
   // ----------------------------------------
   // レア文字列抽選
+  // DOPA CHANCE中は抽選率アップ
   // ----------------------------------------
 
-  const rareString = drawRareString();
+  const rareString = drawRareString(isDopaChanceActive());
 
   if (rareString !== null) {
     activeRareStringIsDebug = false;
@@ -454,7 +459,9 @@ function shuffle() {
   // たんごむチャンス抽選
   // ----------------------------------------
 
-  const chanceProbability = dopaChanceActive
+  const dopaActive = isDopaChanceActive();
+
+  const chanceProbability = dopaActive
     ? Math.min(CHANCE * DOPA_CHANCE_MULTIPLIER, 1)
     : CHANCE;
 
@@ -464,7 +471,10 @@ function shuffle() {
     chanceMode = true;
     chanceStep = 0;
 
-    chanceLetters = createChanceLetters(dopaChanceActive, DOPA_TANGOMU_RATE);
+    chanceLetters = createChanceLetters(
+      dopaActive,
+      DOPA_TANGOMU_RATE
+    );
 
     letters = ["t", "a", "n"];
 
