@@ -105,13 +105,15 @@ debugButton.hidden = !DEBUG_MODE;
 debugEeteButton.hidden = !DEBUG_MODE;
 debugTangomuButton.hidden = !DEBUG_MODE;
 
-// ボタン状態の更新
 function updateButtons() {
   shuffleButton.disabled = animationLock;
   resetButton.disabled = false;
   debugButton.disabled = animationLock;
   debugEeteButton.disabled = animationLock;
   debugTangomuButton.disabled = animationLock;
+
+  // シャッフル回数が100回未満なら、リセットボタンを灰色にする
+  resetCountButton.disabled = count < 100;
 }
 
 // ========================================
