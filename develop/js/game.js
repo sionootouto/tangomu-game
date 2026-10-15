@@ -18,12 +18,25 @@ import {
   startDopaChance
 } from "./dopaChance.js";
 
+import {
+  createSecretState,
+  startSecret,
+  advanceSecret,
+  getSecretColorClass,
+  getSecretCompletionText,
+  recordSecretDiscovery,
+  resetSecret
+} from "./secrets.js";
+
+// ========================================
+// ゲームの基本状態
+// ========================================
+
 let letters = [];
 let chanceLetters = [];
 let count = 0;
 
 let saveData = loadSave();
-let activeRareStringIsDebug = false;
 
 // ========================================
 // セーブ・実績機能
@@ -33,7 +46,9 @@ function persistSave() {
   const success = saveGame(saveData);
 
   if (!success) {
-    console.error("セーブに失敗しました。保存データを確認してください。");
+    console.error(
+      "セーブに失敗しました。保存データを確認してください。"
+    );
   }
 }
 
@@ -60,19 +75,15 @@ function recordClear() {
   updateAchievements();
 }
 
-function recordSecret(secretText) {
-  if (saveData.discoveredSecrets.includes(secretText)) {
-    return;
-  }
+// ========================================
+// シークレット状態
+// ========================================
 
-  saveData.discoveredSecrets.push(secretText);
-  persistSave();
-  updateAchievements();
-}
+const secretState = createSecretState();
 
-let rareStringMode = false;
-let activeRareString = null;
-let rareStringStep = 0;
+// ========================================
+// ゲーム進行状態
+// ========================================
 
 let cleared = false;
 
@@ -228,15 +239,15 @@ function render() {
 
   letters.forEach((letter) => {
     const span = document.createElement("span");
+
     span.className = "letter";
     span.textContent = letter;
 
-    if (rareStringMode && activeRareString) {
-      if (activeRareString.color === "purple") {
-        span.classList.add("rare-purple");
-      } else if (activeRareString.color === "gold") {
-        span.classList.add("rare-gold");
-      }
+    // シークレット専用の文字色
+    const colorClass = getSecretColorClass(secretState);
+
+    if (colorClass) {
+      span.classList.add(colorClass);
     }
 
     lettersEl.appendChild(span);
@@ -299,8 +310,8 @@ function winGame(isDebug = false) {
 function shuffle() {
   if (animationLock) return;
 
-  // クリア後は次のゲームへ。
-  // シャッフル回数は維持する。
+  // クリア後は次のゲームへ
+  // シャッフル回数は維持する
   if (cleared) {
     reset();
     return;
@@ -315,26 +326,28 @@ function shuffle() {
   // シークレットの文字を表示中
   // ----------------------------------------
 
-  if (rareStringMode) {
-    letters.push(activeRareString.text[rareStringStep]);
-    rareStringStep++;
+  if (secretState.active) {
+    const result = advanceSecret(secretState);
+
+    letters.push(result.letter);
 
     render();
 
-    if (rareStringStep >= activeRareString.text.length) {
+    if (result.completed) {
       playSE("secret");
 
-      if (!activeRareStringIsDebug) {
-        recordSecret(activeRareString.text);
+      if (!result.isDebug) {
+        recordSecretDiscovery(result.secret.text, {
+          saveData,
+          persistSave,
+          updateAchievements
+        });
       }
 
       statusEl.textContent =
-        `${activeRareString.display} シークレット${activeRareString.number}/10`;
+        getSecretCompletionText(result.secret);
 
-      activeRareStringIsDebug = false;
-      rareStringMode = false;
-      activeRareString = null;
-      rareStringStep = 0;
+      resetSecret(secretState);
 
       startSecretPause();
       return;
@@ -361,7 +374,9 @@ function shuffle() {
       if (cleared) {
         winGame();
       } else {
-        statusEl.textContent = "まだまだ！ もう一回シャッフル！";
+        statusEl.textContent =
+          "まだまだ！ もう一回シャッフル！";
+
         updateButtons();
       }
 
@@ -439,12 +454,9 @@ function shuffle() {
   const rareString = drawRareString(isDopaChanceActive());
 
   if (rareString !== null) {
-    activeRareStringIsDebug = false;
-    rareStringMode = true;
-    activeRareString = rareString;
-    rareStringStep = 1;
+    startSecret(secretState, rareString, false);
 
-    letters = [activeRareString.text[0]];
+    letters = [rareString.text[0]];
 
     render();
 
@@ -507,7 +519,8 @@ function shuffle() {
   if (cleared) {
     winGame();
   } else {
-    statusEl.textContent = "まだまだ！ もう一回シャッフル！";
+    statusEl.textContent =
+      "まだまだ！ もう一回シャッフル！";
 
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
@@ -527,10 +540,7 @@ function debugClear() {
   count++;
   countEl.textContent = count;
 
-  rareStringMode = false;
-  activeRareString = null;
-  rareStringStep = 0;
-  activeRareStringIsDebug = false;
+  resetSecret(secretState);
 
   chanceMode = false;
   chanceStep = 0;
@@ -543,11 +553,7 @@ function debugClear() {
 function startDebugRareString(rareString) {
   if (cleared || animationLock) return;
 
-  activeRareStringIsDebug = true;
-
-  rareStringMode = true;
-  activeRareString = rareString;
-  rareStringStep = 1;
+  startSecret(secretState, rareString, true);
 
   chanceMode = false;
   chanceStep = 0;
@@ -603,7 +609,7 @@ function startSecretPause() {
 // ========================================
 
 function reset() {
-  activeRareStringIsDebug = false;
+  resetSecret(secretState);
 
   hideChanceAnnouncement();
 
@@ -625,10 +631,6 @@ function reset() {
   chanceMode = false;
   chanceStep = 0;
   chanceLetters = [];
-
-  rareStringMode = false;
-  activeRareString = null;
-  rareStringStep = 0;
 
   letters = shuffledCopy();
 
@@ -656,7 +658,8 @@ function resetShuffleCount() {
   count = 0;
   countEl.textContent = "0";
 
-  statusEl.textContent = "シャッフル回数をリセットしたよ！";
+  statusEl.textContent =
+    "シャッフル回数をリセットしたよ！";
 
   playSE("button");
 }
@@ -694,6 +697,10 @@ debugButton.addEventListener("click", debugClear);
 debugEeteButton.addEventListener("click", debugEete);
 debugTangomuButton.addEventListener("click", debugTangomu);
 
+// ========================================
+// 実績UIの初期化
+// ========================================
+
 setupAchievementUI({
   achievements,
   getSaveData: () => saveData,
@@ -702,6 +709,10 @@ setupAchievementUI({
     location.reload();
   }
 });
+
+// ========================================
+// ゲーム開始
+// ========================================
 
 reset();
 
