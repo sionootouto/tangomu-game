@@ -23,7 +23,19 @@ export const achievements = [
     name: "秘密の発見者",
     description: "シークレットを初めて発見する。",
     condition: (saveData) => saveData.discoveredSecrets.length >= 1
-  }
+  },
+  {
+    id: "dopa_chance_first",
+    name: "はじめてのどぱちゃんす",
+    description: "DOPA CHANCEを初めて発生させる。",
+    condition: (saveData) => saveData.totalDopaChances >= 1
+  },
+  {
+  id: "shuffle_1000",
+  name: "シャッフルの達人",
+  description: "累計1000回シャッフルする。",
+  condition: (saveData) => saveData.totalShuffles >= 1000
+}
 ];
 
 // 条件を満たした未解除の実績を解除する
