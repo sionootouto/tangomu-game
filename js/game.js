@@ -1,3 +1,4 @@
+
 import { reactionLines } from "./lines.js";
 import { launchConfetti } from "./effects.js";
 import { target, DEBUG_MODE, CHANCE } from "./config.js";
@@ -19,6 +20,12 @@ import {
 } from "./dopaChance.js";
 
 import {
+  setupChanceTouchControl,
+  showChanceAnnouncement as showChanceAnnouncementModule,
+  hideChanceAnnouncement as hideChanceAnnouncementModule
+} from "./chanceAnnouncement.js";
+
+import {
   createSecretState,
   startSecret,
   advanceSecret,
@@ -28,27 +35,18 @@ import {
   resetSecret
 } from "./secrets.js";
 
-// ========================================
-// ゲームの基本状態
-// ========================================
-
 let letters = [];
 let chanceLetters = [];
 let count = 0;
 
 let saveData = loadSave();
 
-// ========================================
-// セーブ・実績機能
-// ========================================
-
+// セーブ・実績
 function persistSave() {
   const success = saveGame(saveData);
 
   if (!success) {
-    console.error(
-      "セーブに失敗しました。保存データを確認してください。"
-    );
+    console.error("セーブに失敗しました。保存データを確認してください。");
   }
 }
 
@@ -75,159 +73,75 @@ function recordClear() {
   updateAchievements();
 }
 
-// ========================================
-// シークレット状態
-// ========================================
-
+// シークレット
 const secretState = createSecretState();
 
-// ========================================
-// ゲーム進行状態
-// ========================================
-
 let cleared = false;
-
 let chanceMode = false;
 let chanceStep = 0;
-
 let animationLock = false;
-let chanceTimer = null;
 let secretTimer = null;
 let animationLockTimer = null;
-
-// ========================================
-// DOPA CHANCE設定
-// ========================================
 
 const DOPA_CHANCE_RATE = 1 / 500;
 const DOPA_CHANCE_MULTIPLIER = 2;
 const DOPA_TANGOMU_RATE = 1 / 3;
 
-// ========================================
 // HTML要素
-// ========================================
-
 const lettersEl = document.getElementById("letters");
 const statusEl = document.getElementById("status");
 const countEl = document.getElementById("count");
 const sparkleEl = document.getElementById("sparkle");
-
 const shuffleButton = document.getElementById("shuffle");
 const resetButton = document.getElementById("reset");
 const resetCountButton = document.getElementById("resetCount");
-
 const debugButton = document.getElementById("debug");
 const debugEeteButton = document.getElementById("debugEete");
 const debugTangomuButton = document.getElementById("debugTangomu");
-
 const confettiEl = document.getElementById("confetti");
 const chanceOverlay = document.getElementById("chanceOverlay");
-
 const gameButtons = document.querySelectorAll(".buttons button");
 
+// デバッグボタンの表示設定
 debugButton.hidden = !DEBUG_MODE;
 debugEeteButton.hidden = !DEBUG_MODE;
 debugTangomuButton.hidden = !DEBUG_MODE;
 
-// ========================================
 // ボタン状態の更新
-// ========================================
-
 function updateButtons() {
   shuffleButton.disabled = animationLock;
   resetButton.disabled = false;
-
   debugButton.disabled = animationLock;
   debugEeteButton.disabled = animationLock;
   debugTangomuButton.disabled = animationLock;
 }
 
 // ========================================
-// チャンス演出中のダブルタップズーム対策
+// チャンス演出モジュール
 // ========================================
 
-let lastChanceTouchEnd = 0;
-
-document.addEventListener(
-  "touchend",
-  (event) => {
-    if (!document.body.classList.contains("chance-animation")) {
-      lastChanceTouchEnd = 0;
-      return;
-    }
-
-    const now = Date.now();
-
-    if (now - lastChanceTouchEnd < 700) {
-      event.preventDefault();
-    }
-
-    lastChanceTouchEnd = now;
-  },
-  { passive: false }
-);
-
-// ========================================
-// チャンス演出
-// ========================================
+setupChanceTouchControl();
 
 function showChanceAnnouncement() {
-  animationLock = true;
-  updateButtons();
-
-  document.body.classList.add("chance-animation");
-
-  gameButtons.forEach((button) => {
-    button.classList.add("chance-disabled-look");
+  showChanceAnnouncementModule({
+    chanceOverlay,
+    gameButtons,
+    setAnimationLock: (value) => {
+      animationLock = value;
+    },
+    updateButtons
   });
-
-  chanceOverlay.classList.remove("show");
-  void chanceOverlay.offsetWidth;
-
-  chanceOverlay.setAttribute("aria-hidden", "false");
-  chanceOverlay.classList.add("show");
-
-  if (chanceTimer !== null) {
-    clearTimeout(chanceTimer);
-  }
-
-  chanceTimer = setTimeout(() => {
-    chanceOverlay.classList.remove("show");
-    chanceOverlay.setAttribute("aria-hidden", "true");
-
-    document.body.classList.remove("chance-animation");
-
-    gameButtons.forEach((button) => {
-      button.classList.remove("chance-disabled-look");
-    });
-
-    animationLock = false;
-    chanceTimer = null;
-    lastChanceTouchEnd = 0;
-
-    updateButtons();
-  }, 500);
 }
 
 function hideChanceAnnouncement() {
-  if (chanceTimer !== null) {
-    clearTimeout(chanceTimer);
-    chanceTimer = null;
-  }
-
-  chanceOverlay.classList.remove("show");
-  chanceOverlay.setAttribute("aria-hidden", "true");
-
-  document.body.classList.remove("chance-animation");
-
-  gameButtons.forEach((button) => {
-    button.classList.remove("chance-disabled-look");
+  hideChanceAnnouncementModule({
+    chanceOverlay,
+    gameButtons,
+    setAnimationLock: (value) => {
+      animationLock = value;
+    },
+    updateButtons
   });
-
-  animationLock = false;
-  lastChanceTouchEnd = 0;
-
-  updateButtons();
 }
 
 // ========================================
@@ -237,17 +151,16 @@ function hideChanceAnnouncement() {
 function render() {
   lettersEl.replaceChildren();
 
+  const secretColorClass = getSecretColorClass(secretState);
+
   letters.forEach((letter) => {
     const span = document.createElement("span");
 
     span.className = "letter";
     span.textContent = letter;
 
-    // シークレット専用の文字色
-    const colorClass = getSecretColorClass(secretState);
-
-    if (colorClass) {
-      span.classList.add(colorClass);
+    if (secretColorClass) {
+      span.classList.add(secretColorClass);
     }
 
     lettersEl.appendChild(span);
@@ -255,7 +168,7 @@ function render() {
 }
 
 // ========================================
-// ゲームクリア判定
+// ゲームクリア処理
 // ========================================
 
 function winGame(isDebug = false) {
@@ -297,6 +210,7 @@ function winGame(isDebug = false) {
 
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
+
     confettiEl.replaceChildren();
   }
 
@@ -304,14 +218,12 @@ function winGame(isDebug = false) {
 }
 
 // ========================================
-// シャッフルボタン
+// シャッフル処理
 // ========================================
 
 function shuffle() {
   if (animationLock) return;
 
-  // クリア後は次のゲームへ
-  // シャッフル回数は維持する
   if (cleared) {
     reset();
     return;
@@ -323,7 +235,7 @@ function shuffle() {
   recordShuffle();
 
   // ----------------------------------------
-  // シークレットの文字を表示中
+  // シークレット進行中
   // ----------------------------------------
 
   if (secretState.active) {
@@ -337,11 +249,14 @@ function shuffle() {
       playSE("secret");
 
       if (!result.isDebug) {
-        recordSecretDiscovery(result.secret.text, {
-          saveData,
-          persistSave,
-          updateAchievements
-        });
+        recordSecretDiscovery(
+          result.secret.text,
+          {
+            saveData,
+            persistSave,
+            updateAchievements
+          }
+        );
       }
 
       statusEl.textContent =
@@ -350,15 +265,17 @@ function shuffle() {
       resetSecret(secretState);
 
       startSecretPause();
+
       return;
     }
 
     startSecretPause();
+
     return;
   }
 
   // ----------------------------------------
-  // たんごむチャンス中
+  // チャンスモード
   // ----------------------------------------
 
   if (chanceMode) {
@@ -367,6 +284,7 @@ function shuffle() {
       chanceStep = 0;
 
       letters = shuffledCopy();
+
       cleared = letters.join("") === target;
 
       render();
@@ -427,7 +345,7 @@ function shuffle() {
   }
 
   // ----------------------------------------
-  // DOPA CHANCE抽選（1/500）
+  // DOPA CHANCEの突入抽選
   // ----------------------------------------
 
   if (
@@ -447,8 +365,7 @@ function shuffle() {
   }
 
   // ----------------------------------------
-  // レア文字列抽選
-  // DOPA CHANCE中は抽選率アップ
+  // シークレット抽選
   // ----------------------------------------
 
   const rareString = drawRareString(isDopaChanceActive());
@@ -463,9 +380,9 @@ function shuffle() {
     startSecretPause();
 
     statusEl.textContent = "おっと...？";
-
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
+
     confettiEl.replaceChildren();
 
     return;
@@ -500,6 +417,7 @@ function shuffle() {
 
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
+
     confettiEl.replaceChildren();
 
     showChanceAnnouncement();
@@ -508,10 +426,11 @@ function shuffle() {
   }
 
   // ----------------------------------------
-  // 通常のシャッフル
+  // 通常シャッフル
   // ----------------------------------------
 
   letters = shuffledCopy();
+
   cleared = letters.join("") === target;
 
   render();
@@ -524,6 +443,7 @@ function shuffle() {
 
     statusEl.classList.remove("win");
     sparkleEl.classList.remove("show");
+
     confettiEl.replaceChildren();
 
     updateButtons();
@@ -531,7 +451,7 @@ function shuffle() {
 }
 
 // ========================================
-// デバッグ機能
+// デバッグ：通常クリア
 // ========================================
 
 function debugClear() {
@@ -550,6 +470,10 @@ function debugClear() {
   winGame(true);
 }
 
+// ========================================
+// デバッグ：シークレット開始
+// ========================================
+
 function startDebugRareString(rareString) {
   if (cleared || animationLock) return;
 
@@ -559,6 +483,7 @@ function startDebugRareString(rareString) {
   chanceStep = 0;
 
   letters = [rareString.text[0]];
+
   cleared = false;
 
   render();
@@ -570,6 +495,7 @@ function startDebugRareString(rareString) {
 
   statusEl.classList.remove("win");
   sparkleEl.classList.remove("show");
+
   confettiEl.replaceChildren();
 
   updateButtons();
@@ -584,7 +510,7 @@ function debugTangomu() {
 }
 
 // ========================================
-// シークレット中の操作停止
+// シークレットの一時停止
 // ========================================
 
 function startSecretPause() {
@@ -598,19 +524,15 @@ function startSecretPause() {
   secretTimer = setTimeout(() => {
     secretTimer = null;
     animationLock = false;
-
     updateButtons();
   }, 1000);
 }
 
 // ========================================
-// ゲーム状態のリセット
-// シャッフル回数は維持する
+// リセット
 // ========================================
 
 function reset() {
-  resetSecret(secretState);
-
   hideChanceAnnouncement();
 
   if (secretTimer !== null) {
@@ -623,9 +545,9 @@ function reset() {
     animationLockTimer = null;
   }
 
-  animationLock = false;
+  resetSecret(secretState);
 
-  // count はここでは0に戻さない
+  animationLock = false;
   cleared = false;
 
   chanceMode = false;
@@ -645,13 +567,14 @@ function reset() {
 
   statusEl.classList.remove("win");
   sparkleEl.classList.remove("show");
+
   confettiEl.replaceChildren();
 
   updateButtons();
 }
 
 // ========================================
-// シャッフル回数だけリセット
+// シャッフル回数リセット
 // ========================================
 
 function resetShuffleCount() {
@@ -665,29 +588,28 @@ function resetShuffleCount() {
 }
 
 // ========================================
-// イベント登録・初期化
+// ボタンの操作制御・効果音
 // ========================================
 
-document.addEventListener(
-  "click",
-  (event) => {
-    const button = event.target.closest?.("button");
+document.addEventListener("click", (event) => {
+  const button = event.target.closest?.("button");
 
-    if (button) {
-      if (animationLock || button.disabled) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        return;
-      }
-
-      // 回数リセットボタンは専用処理内で効果音を鳴らす
-      if (button.id !== "resetCount") {
-        playSE("button");
-      }
+  if (button) {
+    if (animationLock || button.disabled) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      return;
     }
-  },
-  true
-);
+
+    if (button.id !== "resetCount") {
+      playSE("button");
+    }
+  }
+}, true);
+
+// ========================================
+// イベント登録
+// ========================================
 
 shuffleButton.addEventListener("click", shuffle);
 resetButton.addEventListener("click", reset);
@@ -698,7 +620,7 @@ debugEeteButton.addEventListener("click", debugEete);
 debugTangomuButton.addEventListener("click", debugTangomu);
 
 // ========================================
-// 実績UIの初期化
+// 実績UI初期化
 // ========================================
 
 setupAchievementUI({
@@ -711,9 +633,8 @@ setupAchievementUI({
 });
 
 // ========================================
-// ゲーム開始
+// 初期化
 // ========================================
 
 reset();
-
 updateAchievements();
