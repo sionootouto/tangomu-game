@@ -416,7 +416,7 @@ function shuffle() {
   // ----------------------------------------
 
   if (
-    !dopaChanceActive &&
+    !isDopaChanceActive() &&
     Math.random() < DOPA_CHANCE_RATE
   ) {
     showDopaEntrance();
