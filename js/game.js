@@ -30,7 +30,11 @@ let activeRareStringIsDebug = false;
 // ========================================
 
 function persistSave() {
-  saveGame(saveData);
+  const success = saveGame(saveData);
+
+  if (!success) {
+    console.error("セーブに失敗しました。保存データを確認してください。");
+  }
 }
 
 function updateAchievements() {
