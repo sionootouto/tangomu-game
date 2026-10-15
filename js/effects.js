@@ -23,4 +23,3 @@ export function launchConfetti(confettiEl) {
     confettiEl.appendChild(piece);
   }
 }
-
