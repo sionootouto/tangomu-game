@@ -1,76 +1,338 @@
-const SAVE_KEY = "tangomu-save-v1";
 
-const DEFAULT_SAVE = {
-  totalShuffles: 0,
-  totalClears: 0,
-  totalDopaChances: 0,
-  discoveredSecrets: [],
-  unlockedAchievements: []
-};
+import { target, CHANCE } from "./config.js";
+import { shuffledCopy, createChanceLetters } from "./shuffle.js";
+import { drawRareString } from "./rareStrings.js";
+import {
+  isDopaChanceActive,
+  showDopaEntrance,
+  startDopaChance
+} from "./dopaChance.js";
+import {
+  startSecret,
+  advanceSecret,
+  getSecretCompletionText,
+  recordSecretDiscovery,
+  resetSecret
+} from "./secrets.js";
+import { playSE } from "./sounds.js";
 
-// セーブデータを読み込む
-export function loadSave() {
-  try {
-    const saved = localStorage.getItem(SAVE_KEY);
+// ========================================
+// シャッフル管理モジュール
+// ========================================
 
-    if (!saved) {
-      return { ...DEFAULT_SAVE };
+const DOPA_CHANCE_RATE = 1 / 500;
+const DOPA_CHANCE_MULTIPLIER = 2;
+const DOPA_TANGOMU_RATE = 1 / 3;
+
+/**
+ * ゲームの状態と必要な処理を受け取り、
+ * シャッフル進行を管理する。
+ */
+export function createShuffleManager({
+  state,
+  render,
+  updateButtons,
+  updateAchievements,
+  persistSave,
+  recordShuffle,
+  recordClear,
+  winGame,
+  reset,
+  startSecretPause,
+  showChanceAnnouncement,
+  statusEl,
+  sparkleEl,
+  confettiEl
+}) {
+  // ----------------------------------------
+  // シークレット進行中のシャッフル
+  // ----------------------------------------
+
+  function handleSecretShuffle() {
+    if (!state.secretState.active) {
+      return false;
     }
 
-    const data = JSON.parse(saved);
+    const result = advanceSecret(state.secretState);
 
-    return {
-      ...DEFAULT_SAVE,
-      ...data,
+    state.letters.push(result.letter);
 
-      totalShuffles:
-        Number.isSafeInteger(data.totalShuffles) &&
-        data.totalShuffles >= 0
-          ? data.totalShuffles
-          : 0,
+    render();
 
-      totalClears:
-        Number.isSafeInteger(data.totalClears) &&
-        data.totalClears >= 0
-          ? data.totalClears
-          : 0,
+    if (result.completed) {
+      playSE("secret");
 
-      totalDopaChances:
-        Number.isSafeInteger(data.totalDopaChances) &&
-        data.totalDopaChances >= 0
-          ? data.totalDopaChances
-          : 0,
+      if (!result.isDebug) {
+        recordSecretDiscovery(result.secret.text, {
+          saveData: state.saveData,
+          persistSave,
+          updateAchievements
+        });
+      }
 
-      discoveredSecrets: Array.isArray(data.discoveredSecrets)
-        ? data.discoveredSecrets.filter(
-            (value) => typeof value === "string"
-          )
-        : [],
+      statusEl.textContent =
+        getSecretCompletionText(result.secret);
 
-      unlockedAchievements: Array.isArray(data.unlockedAchievements)
-        ? data.unlockedAchievements.filter(
-            (value) => typeof value === "string"
-          )
-        : []
-    };
-  } catch (error) {
-    console.error("セーブデータを読み込めませんでした", error);
-    return { ...DEFAULT_SAVE };
-  }
-}
+      resetSecret(state.secretState);
 
-// 保存する
-export function saveGame(data) {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      startSecretPause();
+
+      return true;
+    }
+
+    startSecretPause();
+
     return true;
-  } catch (error) {
-    console.error("セーブデータを保存できませんでした", error);
-    return false;
   }
-}
 
-// セーブデータを削除する
-export function deleteSave() {
-  localStorage.removeItem(SAVE_KEY);
+  // ----------------------------------------
+  // チャンスモード進行
+  // ----------------------------------------
+
+  function handleChanceShuffle() {
+    if (!state.chanceMode) {
+      return false;
+    }
+
+    // 4文字を出し終わった後
+    if (state.chanceStep >= 4) {
+      state.chanceMode = false;
+      state.chanceStep = 0;
+
+      state.letters = shuffledCopy();
+      state.cleared = state.letters.join("") === target;
+
+      render();
+
+      if (state.cleared) {
+        winGame();
+      } else {
+        statusEl.textContent =
+          "まだまだ！ もう一回シャッフル！";
+
+        updateButtons();
+      }
+
+      return true;
+    }
+
+    // 次の文字を追加
+    state.letters.push(
+      state.chanceLetters[state.chanceStep]
+    );
+
+    state.chanceStep++;
+
+    // 7文字そろった場合
+    if (state.letters.length === 7) {
+      const isBigWin =
+        state.letters.join("") === target;
+
+      if (state.animationLockTimer !== null) {
+        clearTimeout(state.animationLockTimer);
+        state.animationLockTimer = null;
+      }
+
+      state.animationLock = true;
+      updateButtons();
+
+      state.animationLockTimer = setTimeout(() => {
+        state.animationLock = false;
+        state.animationLockTimer = null;
+        updateButtons();
+      }, isBigWin ? 1000 : 500);
+
+      winGame();
+
+      return true;
+    }
+
+    render();
+
+    const current = state.letters.join("");
+
+    if (
+      current === "tang" ||
+      current === "tango" ||
+      current === "tangom"
+    ) {
+      statusEl.textContent =
+        "チャンス継続中！ 次の文字を出そう！";
+    } else {
+      statusEl.textContent = "...";
+    }
+
+    return true;
+  }
+
+  // ----------------------------------------
+  // DOPA CHANCE突入抽選
+  // ----------------------------------------
+
+  function tryDopaChance() {
+    if (
+      isDopaChanceActive() ||
+      Math.random() >= DOPA_CHANCE_RATE
+    ) {
+      return false;
+    }
+
+    state.saveData.totalDopaChances =
+      (state.saveData.totalDopaChances ?? 0) + 1;
+
+    persistSave();
+    updateAchievements();
+
+    showDopaEntrance({
+      statusEl,
+      setAnimationLock: (value) => {
+        state.animationLock = value;
+      },
+      updateButtons,
+      startDopaChance: () => startDopaChance(statusEl)
+    });
+
+    return true;
+  }
+
+  // ----------------------------------------
+  // シークレット抽選
+  // ----------------------------------------
+
+  function tryRareString() {
+    const rareString = drawRareString(
+      isDopaChanceActive()
+    );
+
+    if (rareString === null) {
+      return false;
+    }
+
+    startSecret(
+      state.secretState,
+      rareString,
+      false
+    );
+
+    state.letters = [rareString.text[0]];
+
+    render();
+
+    startSecretPause();
+
+    statusEl.textContent = "おっと...？";
+    statusEl.classList.remove("win");
+    sparkleEl.classList.remove("show");
+
+    confettiEl.replaceChildren();
+
+    return true;
+  }
+
+  // ----------------------------------------
+  // たんごむチャンス抽選
+  // ----------------------------------------
+
+  function tryChanceMode() {
+    const dopaActive = isDopaChanceActive();
+
+    const chanceProbability = dopaActive
+      ? Math.min(CHANCE * DOPA_CHANCE_MULTIPLIER, 1)
+      : CHANCE;
+
+    if (Math.random() >= chanceProbability) {
+      return false;
+    }
+
+    playSE("chance");
+
+    state.chanceMode = true;
+    state.chanceStep = 0;
+
+    state.chanceLetters = createChanceLetters(
+      dopaActive,
+      DOPA_TANGOMU_RATE
+    );
+
+    state.letters = ["t", "a", "n"];
+
+    render();
+
+    statusEl.textContent = "たんごむチャンス！";
+
+    statusEl.classList.remove("win");
+    sparkleEl.classList.remove("show");
+
+    confettiEl.replaceChildren();
+
+    showChanceAnnouncement();
+
+    return true;
+  }
+
+  // ----------------------------------------
+  // 通常シャッフル
+  // ----------------------------------------
+
+  function handleNormalShuffle() {
+    state.letters = shuffledCopy();
+
+    state.cleared =
+      state.letters.join("") === target;
+
+    render();
+
+    if (state.cleared) {
+      winGame();
+    } else {
+      statusEl.textContent =
+        "まだまだ！ もう一回シャッフル！";
+
+      statusEl.classList.remove("win");
+      sparkleEl.classList.remove("show");
+
+      confettiEl.replaceChildren();
+
+      updateButtons();
+    }
+  }
+
+
+  function shuffle() {
+    if (state.animationLock) return;
+
+    if (state.cleared) {
+      reset();
+      return;
+    }
+
+    // チャンス・シークレットの演出中は追加カウントしない
+    const isSequenceStep =
+      state.secretState.active || state.chanceMode;
+
+    if (!isSequenceStep) {
+      state.count++;
+
+      document.getElementById("count").textContent =
+        state.count;
+
+      recordShuffle();
+      updateButtons();
+    }
+
+    // 特殊モードを優先順に処理
+    if (handleSecretShuffle()) return;
+    if (handleChanceShuffle()) return;
+    if (tryDopaChance()) return;
+    if (tryRareString()) return;
+    if (tryChanceMode()) return;
+
+    handleNormalShuffle();
+  }
+    return {
+
+    shuffle
+
+  };
+
 }
