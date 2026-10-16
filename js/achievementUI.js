@@ -1,5 +1,6 @@
 
 let achievementDefinitions = [];
+
 let getSaveData = () => ({
   unlockedAchievements: []
 });
@@ -32,6 +33,7 @@ export function refreshAchievementList() {
   if (!achievementList) return;
 
   const saveData = getSaveData();
+
   const unlockedIds = Array.isArray(saveData.unlockedAchievements)
     ? saveData.unlockedAchievements
     : [];
@@ -43,11 +45,17 @@ export function refreshAchievementList() {
   ).length;
 
   const percentage =
-    total === 0 ? 0 : Math.round((unlockedCount / total) * 100);
+    total === 0
+      ? 0
+      : Math.round((unlockedCount / total) * 100);
 
   achievementCount.textContent = `${unlockedCount} / ${total}`;
 
-  achievementProgress.setAttribute("aria-valuenow", String(percentage));
+  achievementProgress.setAttribute(
+    "aria-valuenow",
+    String(percentage)
+  );
+
   achievementProgress.setAttribute(
     "aria-valuetext",
     `${percentage}%解除済み`
@@ -68,37 +76,74 @@ export function refreshAchievementList() {
   for (const achievement of achievementDefinitions) {
     const unlocked = unlockedIds.includes(achievement.id);
 
+    // visibilityが未設定の既存実績は、通常公開として扱う
+    const visibility = achievement.visibility ?? "normal";
+
     const card = document.createElement("article");
+
     card.className = unlocked
       ? "achievement-card unlocked"
       : "achievement-card locked";
 
+    // 未解除の実績で、名前を隠すかどうか
+    const hideName =
+      !unlocked && visibility === "secret";
+
+    // アイコン
     const icon = document.createElement("div");
     icon.className = "achievement-icon";
-    icon.textContent = unlocked ? "🏆" : "🔒";
+    icon.textContent = unlocked
+      ? "🏆"
+      : "🔒";
+
     icon.setAttribute("aria-hidden", "true");
 
+    // 実績情報
     const info = document.createElement("div");
     info.className = "achievement-info";
 
+
+    // 実績名
     const name = document.createElement("h3");
     name.className = "achievement-name";
-    name.textContent = unlocked
-      ? achievement.name
-      : "？？？？？";
 
+    if (unlocked) {
+      name.textContent = achievement.name;
+    } else if (visibility === "secret") {
+      name.textContent = "？？？？？";
+    } else if (visibility === "conditionOnly") {
+      name.textContent = "？？？？？";
+    } else {
+      name.textContent = achievement.name;
+    }
+
+    // 実績説明・条件
     const description = document.createElement("p");
     description.className = "achievement-description";
-    description.textContent = unlocked
-      ? achievement.description
-      : "条件を満たすと解除されます。";
 
+    if (unlocked) {
+      description.textContent = achievement.description;
+    } else if (visibility === "normal") {
+      description.textContent = achievement.description;
+    } else if (visibility === "nameOnly") {
+      description.textContent = "解禁条件はまだ秘密です。";
+    } else if (visibility === "conditionOnly") {
+      description.textContent = achievement.description;
+    } else {
+      description.textContent = "条件を満たすと解除されます。";
+    }
+
+
+    // 解除状態
     const status = document.createElement("span");
     status.className = "achievement-status";
-    status.textContent = unlocked ? "✓ 解除済み" : "未解除";
+    status.textContent = unlocked
+      ? "✓ 解除済み"
+      : "未解除";
 
     info.append(name, description, status);
     card.append(icon, info);
+
     achievementList.appendChild(card);
   }
 }
@@ -160,6 +205,8 @@ export function showAchievementToast(newlyUnlocked) {
 // ========================================
 
 function setupSaveDeleteButton() {
+  if (!saveDeleteButton) return;
+
   saveDeleteButton.addEventListener("click", () => {
     const confirmed = confirm(
       "本当にセーブデータを削除しますか？\n" +
